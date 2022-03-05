@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name "Arduino Controlled Radio")(type Legacy)(uri "${KIPRJMOD}/Arduino Controlled Radio.lib")(options "")(descr ""))
+  (lib (name Arduino-controlled-radio-rescue)(type Legacy)(uri "${KIPRJMOD}/Arduino controlled radio-rescue.lib")(options "")(descr ""))
+)
