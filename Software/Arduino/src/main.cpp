@@ -25,10 +25,10 @@ test code (SI4735_01_POC.cpp) and library written by Ricardo Lima Caratti (Nov 2
 
 // Stub for now
 
-void setup()
+/* void setup()
 {
 }
 
 void loop()
 {
-}
+} */
