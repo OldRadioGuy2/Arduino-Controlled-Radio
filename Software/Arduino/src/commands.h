@@ -18,8 +18,6 @@ processor_t process_sf;
 processor_t process_sb;
 processor_t process_gf;
 
-
-#define COMMAND_COUNT
 command command_list []= {
     {"SF", &process_sf },    //Set Frequency: SF,float_frequency (KHz)
     {"SB", &process_sb },    //Set Band: SB,float_lower_limit, float_upper_limit 
