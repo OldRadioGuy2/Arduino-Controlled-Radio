@@ -36,6 +36,10 @@
 
    By Ricardo Lima Caratti, Nov 2019.
 */
+
+#include "select_build.h"
+#ifdef BUILD_TEST_PROGRAM
+
 #include <Arduino.h>
 
 #include <SI4735.h>
@@ -254,3 +258,5 @@ void loop()
     delay(300);
   }
 }
+
+#endif //BUILD_TEST_PROGRAM
