@@ -14,10 +14,13 @@ test code (SI4735_01_POC.cpp) and library written by Ricardo Lima Caratti (Nov 2
 
 */
 
-#include <Arduino.h>
+#include "select_build.h"
+#ifdef BUILD_APPLICATION
 
+#include <Arduino.h>
 #include <SI4735.h>
 
+#include "arduino_radio.h"
 #include "commands.h"
 
 #define RESET_PIN 2
@@ -26,6 +29,8 @@ test code (SI4735_01_POC.cpp) and library written by Ricardo Lima Caratti (Nov 2
 #define FM_FUNCTION 0
 SI4735 rx;
 char cmd_buffer[40];
+CONFIG * config;
+
 
 void setup(){
   Serial.begin(9600);
@@ -67,6 +72,17 @@ void loop()
         Serial.readBytesUntil('\n',cmd_buffer,sizeof(cmd_buffer)-1);
         Serial.write(process_cmd_line());
     }
+    if (config->use_band_switch) {
+        //get_band_switch()
+    }
+    if (config->use_frequency_cap) {
+        //Get Frequency
+    }
+    if (config->use_volume_ctrl) {
+        //Get Volume
+    }
     
     
 } 
+
+#endif //BUILD_APPLICATION
