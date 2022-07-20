@@ -1,0 +1,14 @@
+(module AAVID_590302B03600G (layer F.Cu) (tedit 60426306)
+  (fp_text reference REF** (at 0 0.5) (layer F.SilkS) hide
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
+  (fp_text value AAVID_590302B03600G (at 0 -0.5) (layer F.Fab) hide
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
+  (fp_line (start -12.7 12.7) (end -12.7 -12.7) (layer F.SilkS) (width 0.12))
+  (fp_line (start -12.7 -12.7) (end 12.7 -12.7) (layer F.SilkS) (width 0.12))
+  (fp_line (start 12.7 -12.7) (end 12.7 12.7) (layer F.SilkS) (width 0.12))
+  (fp_line (start 12.7 12.7) (end -12.7 12.7) (layer F.SilkS) (width 0.12))
+  (pad 1 thru_hole oval (at -12.7 -0.635) (size 1.778 3.556) (drill oval 1.016 2.794) (layers *.Cu *.Mask))
+  (pad 2 thru_hole oval (at 12.7 -0.635) (size 1.778 3.556) (drill oval 1.016 2.794) (layers *.Cu *.Mask))
+)
