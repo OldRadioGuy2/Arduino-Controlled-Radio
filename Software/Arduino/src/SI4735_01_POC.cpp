@@ -64,7 +64,7 @@ SI4735 rx;
 void setup()
 {
   Serial.begin(9600);
-  while(!Serial);
+  // while (!Serial);
 
   digitalWrite(RESET_PIN, HIGH);
   
@@ -89,7 +89,8 @@ void setup()
   rx.setup(RESET_PIN, FM_FUNCTION);
   // rx.setup(RESET_PIN, -1, 1, SI473X_ANALOG_AUDIO);
   // Starts defaul radio function and band (FM; from 84 to 108 MHz; 103.9 MHz; step 100kHz)
-  rx.setFM(8400, 10800, 10650, 10);
+  rx.setFM(8400, 10800, 10070, 20);
+  rx.setSeekFmSpacing(2);
   delay(500);
   currentFrequency = previousFrequency = rx.getFrequency();
   rx.setVolume(45);
@@ -98,7 +99,6 @@ void setup()
 
 void showHelp()
 {
-
   Serial.println("Type F to FM; A to MW; 1 to All Band (100kHz to 30MHz)");
   Serial.println("Type U to increase and D to decrease the frequency");
   Serial.println("Type S or s to seek station Up or Down");
@@ -176,7 +176,7 @@ void loop()
       break;
     case 'f':
     case 'F':
-      rx.setFM(8600, 10800, 10390, 50);
+      rx.setFM(8600, 10800, 10070, 20);
       rx.setSeekAmRssiThreshold(0);
       rx.setSeekAmSrnThreshold(10);
       break;
@@ -212,12 +212,10 @@ void loop()
       }
       break;
     case 'S':
-      rx.seekStationProgress(showFrequency,1);
-      // rx.seekStationUp();
+      rx.seekStationProgress(showFrequency, 1);
       break;
     case 's':
-      rx.seekStationProgress(showFrequency,0);
-      // rx.seekStationDown();
+      rx.seekStationProgress(showFrequency, 0);
       break;
     case '0':
       showStatus();
