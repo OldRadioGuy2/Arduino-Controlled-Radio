@@ -1,3 +1,6 @@
-Software/PC/.venv/*
-Software/PC/build/*
-Software/PC/src/gui/__pycache__/*
+/Software/PC/.venv/*
+/Software/PC/build/*
+/Software/PC/src/gui/__pycache__/*
+/Software/PC/src/utilities/__pycache__/*
+/Software/PC/src/__pycache__/*
+
