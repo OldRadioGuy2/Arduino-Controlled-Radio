@@ -32,6 +32,9 @@ class MainWindow ( wx.Frame ):
 		self.file_save_config = wx.MenuItem( self.m_menu1, wx.ID_ANY, u"Save Configuration", wx.EmptyString, wx.ITEM_NORMAL )
 		self.m_menu1.Append( self.file_save_config )
 
+		self.file_exit = wx.MenuItem( self.m_menu1, wx.ID_ANY, u"Exit", wx.EmptyString, wx.ITEM_NORMAL )
+		self.m_menu1.Append( self.file_exit )
+
 		self.m_menubar1.Append( self.m_menu1, u"File" )
 
 		self.m_menu4 = wx.Menu()
@@ -144,6 +147,8 @@ class MainWindow ( wx.Frame ):
 		band_switchChoices = [ u"AM:  540-1620kHz", u"SW1: 1.7-4.0MHz", u"80M Ham: 3.5-4.0MHz", u"FM: 88-108MHz", wx.EmptyString ]
 		self.band_switch = wx.Choice( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, band_switchChoices, 0 )
 		self.band_switch.SetSelection( 0 )
+		self.band_switch.SetMinSize( wx.Size( 300,-1 ) )
+
 		bSizer4.Add( self.band_switch, 0, wx.ALL, 5 )
 
 
@@ -198,7 +203,7 @@ class MainWindow ( wx.Frame ):
 		bSizer7.Add( self.m_staticText9, 0, wx.ALL, 5 )
 
 		self.command_entry = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.Size( -1,-1 ), wx.TE_PROCESS_ENTER )
-		self.command_entry.SetMinSize( wx.Size( -1,50 ) )
+		self.command_entry.SetMinSize( wx.Size( -1,30 ) )
 
 		bSizer7.Add( self.command_entry, 0, wx.ALL|wx.EXPAND, 5 )
 
@@ -216,6 +221,7 @@ class MainWindow ( wx.Frame ):
 		self.Bind( wx.EVT_SHOW, self.MainWindowOnShow )
 		self.Bind( wx.EVT_SIZE, self.MainWindowOnSize )
 		self.Bind( wx.EVT_MENU, self.file_select_portOnMenuSelection, id = self.file_select_port.GetId() )
+		self.Bind( wx.EVT_MENU, self.file_exitOnMenuSelection, id = self.file_exit.GetId() )
 		self.volume_control.Bind( wx.EVT_SPINCTRL, self.volume_controlOnSpinCtrl )
 		self.band_switch.Bind( wx.EVT_CHOICE, self.band_switchOnChoice )
 		self.command_entry.Bind( wx.EVT_TEXT_ENTER, self.command_entryOnTextEnter )
@@ -235,6 +241,9 @@ class MainWindow ( wx.Frame ):
 		event.Skip()
 
 	def file_select_portOnMenuSelection( self, event ):
+		event.Skip()
+
+	def file_exitOnMenuSelection( self, event ):
 		event.Skip()
 
 	def volume_controlOnSpinCtrl( self, event ):
