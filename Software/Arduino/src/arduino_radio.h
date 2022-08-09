@@ -1,34 +1,48 @@
 /* Global constants and typedefs
 */
 
-#define INT int
-#define UINT unsigned int
-#define CHAR char
-#define UCHAR unsigned char
-#define BOOL bool
+#include <Arduino.h>
+#include <SI4735.h>
 
-#define AM 0
-#define FM 1
-#define SSB 2
+typedef int INT;
+typedef unsigned int UINT;
+typedef char CHAR;
+typedef unsigned char UCHAR;
+typedef char BOOL;
+
+#define MAX_VOLUME  100
+
+enum band_selections {
+    BAND_AM,
+    BAND_FM,
+    BAND_SSB,
+    NUM_BANDS
+};
+
+enum sel_features {
+    FEATURE_FREQ_CAP,
+    FEATURE_VOLUME,
+    FEATURE_BAND_SW,
+    FEATURE_DISPLAY,
+    NUM_FEATURES
+};
 
 // Configuration memory
-#define CONFIG_VERSION "VER001"
+#define SIZE_OF_CONFIG_VERS 8
 
 typedef struct {
-    char version[sizeof(CONFIG_VERSION)];
-    UINT band;
-    UINT frequency;
-    UINT volume;
-    BOOL use_frequency_cap;
-    BOOL use_volume_ctrl;
-    BOOL use_band_switch; 
+    char version[SIZE_OF_CONFIG_VERS];
+    UINT cfgSize;
+    UINT frequency[NUM_BANDS];
+    CHAR band;
+   UCHAR volume;
+    CHAR featureEn[NUM_FEATURES];
 } CONFIG;
 
-CONFIG * load_config(); // Load config from EEPROM using default if invalid
-CONFIG * get_config();  // Return the Config address
-void save_config();     // Save the Config to EEPROM
+void load_config(void); // Load config from EEPROM using default if invalid
+void save_config(void);     // Save the Config to EEPROM
 
-// Error codes (commands always return *strings)
-#define SUCCESS "0"
-#define INVALID_COMMAND "-1"
-#define INVALID_ARG "-2"
+extern CONFIG globalConfig;
+
+extern SI4735 rx;
+

@@ -1,48 +1,88 @@
 /* Load and Save configuration data in atomega328 EEPROM
 */
 
-#include <Arduino.h>
-#include <EEPROM.h>
+#include "select_build.h"
 #include "arduino_radio.h"
 
+#ifdef BUILD_APPLICATION
+
+#if USE_EEPROM
+#include <EEPROM.h>
+#endif
+
+/* Where in the EEPROM space do we start */
 #define STARTING_LOCATION 0
 
-CONFIG Config;
+CONFIG globalConfig;
 
-CONFIG default_config {
-    CONFIG_VERSION,
-    AM,
-    1030,
-    30,
-    false,
-    false,
-    false
+static const CONFIG default_config {
+    "VER-001",
+    sizeof(CONFIG),
+    { 1030, 9950, 1030 },
+    BAND_FM,
+    MAX_VOLUME / 3,
+    { 0, 0, 0, 0 }
 };
 
-CONFIG *get_config() {
-    return &Config;
-}
+void load_config(void)
+{
+#if USE_EEPROM
+    char * cfg, ch;
+    UINT i;
+    BOOL valid = true;
+    // read everything we expect from the flash
+    cfg = (char *) & globalConfig;
+    for (i=0; i < sizeof(CONFIG); i++) {
+        ch = EEPROM.read( STARTING_LOCATION + i);
+        * cfg = ch;
+        cfg ++;
+    }
 
-CONFIG * load_config(){
     // Is configuration valid?
-    char c;
-    for (int i=0; i < sizeof(CONFIG_VERSION); i++) {
-        if ( EEPROM.read( STARTING_LOCATION+ offsetof(CONFIG , version)+i) != default_config.version[i] ){
-            memcpy( &Config, &default_config, sizeof(Config));
-            save_config();
-        }
-        else {
-            for (int i=0; i < sizeof(CONFIG); i++ ) {
-                * (UCHAR *) (&Config + i) = EEPROM.read(STARTING_LOCATION+i);
-            }
-
+    for (i=0; i < SIZE_OF_CONFIG_VERS; i++) {
+        if (globalConfig.version[i] != default_config.version[i] ) {
+            valid = false;
+            Serial.println( "Config fails version." );
+            break;
         }
     }
-    return &Config;
+    if ((globalConfig.band < BAND_AM) ||
+        (globalConfig.band >= NUM_BANDS)) {
+            valid = false;
+            Serial.println( "Config fails band." );
+        }
+    if (false == valid) {
+        memcpy( & globalConfig, & default_config, sizeof(CONFIG));
+        save_config();
+    } else
+    if (sizeof(CONFIG) > globalConfig.cfgSize) {
+        UINT first_feature_off = offsetof(CONFIG , featureEn[0]);
+        Serial.print( "Config has grown from " );
+        Serial.print( globalConfig.cfgSize );
+        Serial.print( " to " );
+        Serial.println( sizeof(CONFIG) );
+        if (globalConfig.cfgSize > (first_feature_off + (FEATURE_DISPLAY * sizeof(CHAR)))) {
+            int num_features_read = (globalConfig.cfgSize - first_feature_off) / sizeof(CHAR);
+            do {
+                globalConfig.featureEn[num_features_read] = default_config.featureEn[num_features_read];
+                num_features_read ++;
+            } while (NUM_FEATURES > num_features_read);
+        }
+    }
+#endif
 }
 
-void save_config() {
-    for (int i=0; i < sizeof(CONFIG); i++ ) {
-        EEPROM.write(STARTING_LOCATION+i, * (UCHAR *) (&Config + i) );
+void save_config(void)
+{
+#if USE_EEPROM
+    char * cfg, ch;
+    UINT i;
+    cfg = (char *) & globalConfig;
+    for (i=0; i < sizeof(CONFIG); i++ ) {
+        ch = * cfg;
+        EEPROM.write(STARTING_LOCATION + i, ch);
+        cfg ++;
     }
+#endif
 }
+#endif  // #ifdef BUILD_APPLICATION - whole file
