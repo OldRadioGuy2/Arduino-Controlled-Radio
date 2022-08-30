@@ -5,7 +5,7 @@ from gui import MainWindow
 import serial
 import serial.tools.list_ports
 
-from utilities import configuration
+from utilities import db
 
 # Implementing SelectPortDlg
 class SelectPortDlg( MainWindow.SelectPortDlg ):

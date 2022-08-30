@@ -4,9 +4,9 @@ import wx
 import wx.lib.newevent
 from gui import MainWindow
 from gui.SelectPortDlg import SelectPortDlg
-from utilities import configuration
-from utilities.configuration import FrequencyRange
-from utilities.formatters import format_frequency_range
+from gui.ConfigurationDlg import ConfigurationDlg
+from utilities import db
+from utilities.db import Band
 from utilities import serial
 
 import logging
@@ -21,20 +21,20 @@ SERIALRX = wx.NewEventType()
 class ArduinoRadioMainWindow( MainWindow.MainWindow ):
 	def __init__( self, parent ):
 		MainWindow.MainWindow.__init__( self, parent )
-		self.configuration= configuration.Configuration()
-		self.config = self.configuration.config_view
+		self.db= db.Db()
+		self.db_view = self.db.db_view
 		self.serial_port=serial.SerialIO(self, SerialRxEvent)
 		
 		self.tuning_slider.Bind(wx.EVT_SLIDER, self.tuning_sliderOnSlider)
-		self.set_band(self.config.current_band_index)
-		self.set_volume(self.config.current_volume, update_control=True)
+		self.set_band(self.db_view.current_band_index)
+		self.set_volume(self.db_view.current_volume, update_control=True)
   
 		self.populate_band_chooser()
-		self.band_switch.SetSelection(self.config.current_band_index)
+		self.band_switch.SetSelection(self.db_view.current_band_index)
   
 		self.status_bar.SetStatusText("Disconnected", 0)
-		self.status_bar.SetStatusText("Port: {0}".format(self.config.port),1)
-		self.status_bar.SetStatusText("Baud Rate: {0}".format(self.config.baud_rate))
+		self.status_bar.SetStatusText("Port: {0}".format(self.db_view.port),1)
+		self.status_bar.SetStatusText("Baud Rate: {0}".format(self.db_view.baud_rate))
 		self.Bind(EVT_SERIALRX, self.serial_receive)
     
 	# Utilities
@@ -44,33 +44,33 @@ class ArduinoRadioMainWindow( MainWindow.MainWindow ):
 		self.tuning_slider.SetSize(wx.Size(window_size.width-20,control_size.height))
   
 	def set_band(self, band_index:int) -> None:
-		self.config.current_band_index=band_index
-		band=self.config.bands[band_index]
+		self.db_view.current_band_index=band_index
+		band=self.db_view.bands[band_index]
 		f_min=int(band.f_min*band.scale)
 		f_max=int(band.f_max*band.scale)
 		self.tuning_slider.SetRange(f_min, f_max)
 		self.static_min_frequency.SetLabel("{0}{1}".format(band.f_min,band.units))
 		self.static_max_frequency.SetLabel("{0}{1}".format(band.f_max,band.units))
-		self.serial_send("sb,{0},{1},{2},{3},{4},{5}".format(f_min,
+		self.serial_send("SB,{0},{1},{2},{3},{4},{5}".format(f_min,
                                                               		f_max,
                                                                 	band.scale,
 																	band.units,
-																	band.format,
+																	band.mode,
 																	band.label
                                                                  ))
 		self.set_frequency(band.current_frequency, update_control=True)
 
 	def set_frequency(self, freq:int, update_control:bool=False) -> None:
-		current_band=self.config.bands[self.config.current_band_index]
+		current_band=self.db_view.bands[self.db_view.current_band_index]
 		current_band.current_frequency=freq
 		if update_control:
 			self.tuning_slider.SetValue(freq)
 		self.static_current_frequency.SetLabel("{0}".format(freq))
-		x=self.serial_send("sf,{:d}".format(freq))
+		x=self.serial_send("SF,{:d}".format(freq))
 		# ToDo: insert board command
 
 	def set_volume(self, volume:int, update_control:bool=False) -> None:
-		self.config.current_volume=volume
+		self.db_view.current_volume=volume
 		if update_control:
 			self.volume_control.SetValue(volume)
 		self.serial_send('sv,{:d}'.format(volume))
@@ -78,8 +78,8 @@ class ArduinoRadioMainWindow( MainWindow.MainWindow ):
 		
 	def populate_band_chooser(self) -> None:
 		self.band_switch.Clear()
-		for band in self.config.bands:
-			self.band_switch.Append(format_frequency_range(band))
+		for band in self.db_view.bands:
+			self.band_switch.Append(band.format_frequency_range())
    
 	def serial_send(self, cmd:str) -> None:
 		self.terminal_text_ctrl.AppendText(cmd + '\n')
@@ -89,7 +89,7 @@ class ArduinoRadioMainWindow( MainWindow.MainWindow ):
 	# Handlers for MainWindow events.
 	def MainWindowOnShow( self, event ):
 		self.resize_slider()
-		self.serial_port.open(self.config.port, self.config.baud_rate)
+		self.serial_port.open(self.db_view.port, self.db_view.baud_rate)
 		pass
 
 	def MainWindowOnSize(self, event):
@@ -97,7 +97,7 @@ class ArduinoRadioMainWindow( MainWindow.MainWindow ):
   
 	def MainWindowOnClose(self, event):
 		self.serial_port.close()
-		self.configuration.update_configuration()
+		self.db.update_db()
 		self.Destroy()
   
 	def tuning_sliderOnSlider(self,event):
@@ -126,16 +126,22 @@ class ArduinoRadioMainWindow( MainWindow.MainWindow ):
 	def file_select_portOnMenuSelection(self, event):
 		dlg=SelectPortDlg(self)
 		if dlg.ShowModal() == wx.OK:
-			self.config.port = dlg.get_port()
-			self.config.baud_rate = dlg.get_baud_rate()
-			self.configuration.update_configuration()
+			self.db_view.port = dlg.get_port()
+			self.db_view.baud_rate = dlg.get_baud_rate()
+			self.db.update_db()
 			self.serial_port.close()
-			self.serial_port.open(self.config.port, self.config.baud_rate)
-			self.status_bar.SetStatusText("Port: {0}".format(self.config.port),1)
+			self.serial_port.open(self.db_view.port, self.db_view.baud_rate)
+			self.status_bar.SetStatusText("Port: {0}".format(self.db_view.port),1)
 		pass
 	
 	def file_exitOnMenuSelection(self, event):
 		self.MainWindowOnClose(event)
+  
+	def configure_configureOnMenuSelection(self,event):
+		dlg=ConfigurationDlg(self)
+		result=dlg.ShowModal()
+		if result == wx.ID_OK:
+			pass
 
 	# Bound Events
 	def serial_receive(self,event):
