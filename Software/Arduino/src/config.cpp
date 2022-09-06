@@ -21,7 +21,13 @@ static const CONFIG default_config {
     { 1030, 9950, 1030 },
     BAND_FM,
     MAX_VOLUME / 3,
-    { 0, 0, 0, 0 }
+    DEFAULT_ROTATE,
+    {
+        0,
+        0,
+        0,
+        0 == USE_EEPROM
+    }
 };
 
 void load_config(void)
@@ -69,6 +75,8 @@ void load_config(void)
             } while (NUM_FEATURES > num_features_read);
         }
     }
+#else
+    memcpy( & globalConfig, & default_config, sizeof(CONFIG));
 #endif
 }
 

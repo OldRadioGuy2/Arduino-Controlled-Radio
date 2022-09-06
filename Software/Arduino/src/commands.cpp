@@ -30,16 +30,24 @@ int my_atoi(char * str)
      return num;
 }
 
+// Absolute frequecy, FM is in 10's of killihertz
 const char * set_freq(char * cmd)
 {
     int freq = my_atoi(& cmd[2]);
     Serial.print(" Set Frequency ");
     Serial.println(freq);
-    if (0 != freq)
+    if (0 != freq) {
+        if (BAND_FM == globalConfig.band)
+             freq *= 10;
         globalConfig.frequency[ (int)globalConfig.band] = freq;
+    }
     return dummyRet;
 }
 
+// Band is 1-based :
+//  BAND_AM = 1,
+//  BAND_FM = 2,
+//  BAND_SSB = 3 
 const char * set_band(char * cmd)
 {
     int band = my_atoi(& cmd[2]);
@@ -52,6 +60,7 @@ const char * set_band(char * cmd)
     return dummyRet;
 }
 
+// Absolute volume in  the range of 0 - MAX_VOLUME
 const char * set_volume(char * cmd)
 {
     int volume = my_atoi(& cmd[2]);
@@ -62,22 +71,29 @@ const char * set_volume(char * cmd)
     return dummyRet;
 }
 
+// Enable and disable are 1-based
+//  FEATURE_FREQ_CAP = 1,
+//  FEATURE_VOLUME = 2,
+//  FEATURE_BAND_SW = 3,
+//  FEATURE_DISPLAY = 4,
 const char * enable_feature(char * cmd)
 {
     int featId = my_atoi(& cmd[2]);
-    Serial.print(" Enable feature ");
-    Serial.println(featId);
-    if (NUM_FEATURES >= featId)
-        globalConfig.featureEn[featId] = 1;
+    if ((0 < featId) && (NUM_FEATURES >= featId)) {
+          Serial.print(" Enable feature ");
+          Serial.println(featId);
+          globalConfig.featureEn[featId -1] = 1;
+     }
     return dummyRet;
 }
 const char * disable_feature(char * cmd)
 {
     int featId = my_atoi(& cmd[2]);
-    Serial.print(" Disable feature ");
-    Serial.println(featId);
-    if (NUM_FEATURES >= featId)
-        globalConfig.featureEn[featId] = 0;
+    if ((0 < featId) && (NUM_FEATURES >= featId)) {
+          Serial.print(" Disable feature ");
+          Serial.println(featId);
+          globalConfig.featureEn[featId -1] = 0;
+    }
     return dummyRet;
 }
 
@@ -93,8 +109,12 @@ const char * get_freq(char * cmd)
      UINT currentFrequency;
      CHAR band = globalConfig.band;
  
+#if BUILD_RADIO
      Serial.print(" The Si473X frequency is ");
      currentFrequency = rx.getFrequency();
+#else
+     currentFrequency = globalConfig.frequency[ (int)band ];
+#endif
      if (BAND_FM == band) {
           UINT kiloHz = currentFrequency % 100;
           currentFrequency = currentFrequency / 100;
@@ -107,6 +127,17 @@ const char * get_freq(char * cmd)
      Serial.println(bandStrings[ (int)band ]);
 
      return dummyRet;
+}
+
+const char * screen_rotate(char * cmd)
+{
+    int rote = my_atoi(& cmd[2]);
+    Serial.print(" Rotate ");
+    Serial.println(rote);
+    if ((0 < rote) && (4 >= rote)) {
+        globalConfig.scrRotate = rote -1;
+    }
+    return dummyRet;
 }
 
 const char * read_Cap(char * cmd)

@@ -29,6 +29,7 @@ enum sel_features {
 
 // Configuration memory
 #define SIZE_OF_CONFIG_VERS 8
+# define DEFAULT_ROTATE    3
 
 typedef struct {
     char version[SIZE_OF_CONFIG_VERS];
@@ -36,11 +37,14 @@ typedef struct {
     UINT frequency[NUM_BANDS];
     CHAR band;
    UCHAR volume;
+   UCHAR scrRotate;
     CHAR featureEn[NUM_FEATURES];
 } CONFIG;
 
 void load_config(void); // Load config from EEPROM using default if invalid
 void save_config(void);     // Save the Config to EEPROM
+
+extern const char * const bandStrings[NUM_BANDS];
 
 extern CONFIG globalConfig;
 

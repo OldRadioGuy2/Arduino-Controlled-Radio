@@ -7,6 +7,11 @@ Software Controlled Radio - Command Definitions
 
 #define triggerPin      13       // pin to charge the capacitor - connected to one end of the charging resistor
 #define pulseInPin      10
+#define digitalBandSwitch    A1
+
+#define analogVolumePin      0
+#define analogBandSwitch     1
+#define MAX_ANALOG_VALUE    (1 << 10)
 
 typedef const char * processor_t(char * cmd);
 typedef processor_t * processor_p;
@@ -24,6 +29,9 @@ processor_t get_freq;
 processor_t enable_feature;
 processor_t disable_feature;
 processor_t save_cfg;
+#if BUILD_GUI_LIB
+processor_t screen_rotate;
+#endif
 
 // extern command command_list[];
 // Error codes (commands always return * strings)
