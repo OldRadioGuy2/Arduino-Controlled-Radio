@@ -400,7 +400,7 @@ class ConfigurationDlg ( wx.Dialog ):
 		self.m_panel1.SetSizer( bSizer12 )
 		self.m_panel1.Layout()
 		bSizer12.Fit( self.m_panel1 )
-		self.configuration_page.AddPage( self.m_panel1, u"a page", False )
+		self.configuration_page.AddPage( self.m_panel1, u"General", False )
 		self.band_panel = wx.Panel( self.configuration_page, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
 		bSizer22 = wx.BoxSizer( wx.VERTICAL )
 
@@ -545,8 +545,8 @@ class EditBandDlg ( wx.Dialog ):
 
 		gSizer3.Add( self.m_staticText13, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT|wx.ALL, 5 )
 
-		self.min_freq_dbl_spin = wx.SpinCtrlDouble( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.SP_ARROW_KEYS, 0, 100, 0, 1 )
-		self.min_freq_dbl_spin.SetDigits( 0 )
+		self.min_freq_dbl_spin = wx.SpinCtrlDouble( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.SP_ARROW_KEYS, 0, 100, 0, 0.01 )
+		self.min_freq_dbl_spin.SetDigits( 2 )
 		gSizer3.Add( self.min_freq_dbl_spin, 0, wx.ALL, 5 )
 
 		self.m_staticText14 = wx.StaticText( self, wx.ID_ANY, u"Max. Freq.:", wx.DefaultPosition, wx.DefaultSize, 0 )
@@ -554,8 +554,8 @@ class EditBandDlg ( wx.Dialog ):
 
 		gSizer3.Add( self.m_staticText14, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT|wx.ALL, 5 )
 
-		self.max_freq_dbl_spin = wx.SpinCtrlDouble( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.SP_ARROW_KEYS, 0, 100, 0, 1 )
-		self.max_freq_dbl_spin.SetDigits( 0 )
+		self.max_freq_dbl_spin = wx.SpinCtrlDouble( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.SP_ARROW_KEYS, 0, 100, 0, 0.01 )
+		self.max_freq_dbl_spin.SetDigits( 2 )
 		gSizer3.Add( self.max_freq_dbl_spin, 0, wx.ALL, 5 )
 
 		self.m_staticText15 = wx.StaticText( self, wx.ID_ANY, u"Units:", wx.DefaultPosition, wx.DefaultSize, 0 )
@@ -601,7 +601,23 @@ class EditBandDlg ( wx.Dialog ):
 
 		self.Centre( wx.BOTH )
 
+		# Connect Events
+		self.Bind( wx.EVT_INIT_DIALOG, self.EditBandDlgOnInitDialog )
+		self.ok_btn.Bind( wx.EVT_BUTTON, self.ok_btnOnButtonClick )
+		self.cancel_btn.Bind( wx.EVT_BUTTON, self.cancel_btnOnButtonClick )
+
 	def __del__( self ):
 		pass
+
+
+	# Virtual event handlers, overide them in your derived class
+	def EditBandDlgOnInitDialog( self, event ):
+		event.Skip()
+
+	def ok_btnOnButtonClick( self, event ):
+		event.Skip()
+
+	def cancel_btnOnButtonClick( self, event ):
+		event.Skip()
 
 
