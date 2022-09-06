@@ -5,45 +5,59 @@ from gui import MainWindow
 import serial
 import serial.tools.list_ports
 
-from utilities import db
+from utilities.db import Db, DbView
 
 # Implementing SelectPortDlg
-class SelectPortDlg( MainWindow.SelectPortDlg ):
-	def __init__( self, parent ):
-		MainWindow.SelectPortDlg.__init__( self, parent )
-		self.ports=serial.tools.list_ports.comports()
 
-	def get_port(self):
-		return self.port_chooser.GetString(self.port_chooser.GetSelection())
 
-	def get_baud_rate(self):
-		return self.baud_rate_chooser.GetString(self.baud_rate_chooser.GetSelection())
+class SelectPortDlg(MainWindow.SelectPortDlg):
+    """
+    Implements the Select USB Port Dialog
 
-	# Handlers for SelectPortDlg events.
-	def SelectPortDlgOnInitDialog( self, event ):
-		for port in self.ports:
-			self.port_chooser.Append(port.device)
+    Methods
+    -------
+    get_port()
+        Returns a string containing the USB Port name
 
-		config=configuration.Configuration().config_view
-		current_port = config.port
-		idx=self.port_chooser.FindString(current_port)
-		if idx != wx.NOT_FOUND:
-			self.port_chooser.SetSelection(idx)
-		else:
-			self.port_chooser.SetSelection(0)
-		current_baud_rate = config.baud_rate
-		idx = self.baud_rate_chooser.FindString(current_baud_rate)
-		if idx != wx.NOT_FOUND:
-			self.baud_rate_chooser.SetSelection(idx)
-		pass
+    get_baud_rate()
+        Returns an integer baud rate
+    """
 
-	def port_chooserOnChoice( self, event ):
-		# TODO: Implement port_chooserOnChoice
-		pass
+    def __init__(self, parent):
+        MainWindow.SelectPortDlg.__init__(self, parent)
+        self.ports: list = serial.tools.list_ports.comports()
+        database: Db() = Db()
+        self.db: DbView() = database.db_view
 
-	def on_ok_button_click(self, event):
-		self.EndModal(wx.OK)
+    def get_port(self) -> str:
+        return self.port_chooser.GetString(self.port_chooser.GetSelection())
 
-	def on_cancel_button_click(self, event):
-		self.EndModal(wx.CANCEL)
+    def get_baud_rate(self) -> int:
+        return self.baud_rate_chooser.GetString(self.baud_rate_chooser.GetSelection())
 
+    # Handlers for SelectPortDlg events.
+    def SelectPortDlgOnInitDialog(self, event):
+        for port in self.ports:
+            self.port_chooser.Append(port.device)
+
+        current_port = self.db.port
+        idx = self.port_chooser.FindString(current_port)
+        if idx != wx.NOT_FOUND:
+            self.port_chooser.SetSelection(idx)
+        else:
+            self.port_chooser.SetSelection(0)
+        current_baud_rate = db.baud_rate
+        idx = self.baud_rate_chooser.FindString(current_baud_rate)
+        if idx != wx.NOT_FOUND:
+            self.baud_rate_chooser.SetSelection(idx)
+        pass
+
+    def port_chooserOnChoice(self, event):
+        # TODO: Implement port_chooserOnChoice
+        pass
+
+    def on_ok_button_click(self, event):
+        self.EndModal(wx.OK)
+
+    def on_cancel_button_click(self, event):
+        self.EndModal(wx.CANCEL)
