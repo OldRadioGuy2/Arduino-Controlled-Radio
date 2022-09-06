@@ -30,6 +30,8 @@ test code (SI4735_01_POC.cpp) and library written by Ricardo Lima Caratti (Nov 2
 # define TFT_MISO 8
 # define TFT_CLK  9
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
+
+#include "display.h"
 #endif
 
 #if BUILD_RADIO
@@ -127,7 +129,6 @@ const char * process_cmd_line(void)
 }
 
 #if BUILD_GUI_LIB
-# define MY_TEXT_NUM_STEPS    5
  UINT  dispFreq = 999;
  uint8_t curRotate = 255;
  void myText(int line);
@@ -337,37 +338,52 @@ void loop(void)
                 curRotate = globalConfig.scrRotate; // newRotate;
                 tft.setRotation(curRotate);
                 Serial.print("rotate"); Serial.println(curRotate, DEC); 
-                goto set_anyway;
+                dispFreq = desiredFrequency;
+                scr_need_up = 1;
             }
+            else
 #endif
-     if (dispFreq != desiredFrequency)
-     {
-   set_anyway:
-      Serial.print("freq"); Serial.println(desiredFrequency, DEC); 
-      dispFreq = desiredFrequency;
-      if (2 != scr_need_up)
-        scr_need_up ++;
-    }
+            if (dispFreq != desiredFrequency)
+            {
+            Serial.print("freq"); Serial.println(desiredFrequency, DEC); 
+            dispFreq = desiredFrequency;
+#if 1
+            if (0 == scr_need_up)
+            {
+              int adjust_y = FIRST_LINE_SIZE * 8 * 2;
+              if (0 == (curRotate & 1)) 
+                 adjust_y += FIRST_LINE_SIZE * 8;
+          //  tft.fill(BACKGROUND_COLOR);
+              tft.rect(0, adjust_y, 
+                        tft.Adafruit_SPITFT::width(),
+                        SECOND_LINE_SIZE * 8);
+              tft.setCursor(0, adjust_y);
+              myText(2);  // re-draw second line
+            } else
+#endif
+            if (2 != scr_need_up)
+                scr_need_up ++;
+            }
 
-    if (0 != scr_need_up) {
-      if (MY_TEXT_NUM_STEPS > scr_line) {
-        myText(scr_line);
-        scr_line ++;
-    } else {
-        if (dbgText(scr_line - MY_TEXT_NUM_STEPS))
-        {
-          scr_line = 0;
-# if 1
-          if (curRotate != globalConfig.scrRotate) {
-            curRotate = globalConfig.scrRotate;
-           tft.setRotation(curRotate);
-        }
-# endif
-          scr_need_up --;
-        } else
-          scr_line ++;
-      }
-    }
+            if (0 != scr_need_up) {
+            if (MY_TEXT_NUM_STEPS > scr_line) {
+                myText(scr_line);
+                scr_line ++;
+            } else {
+                if (dbgText(scr_line - MY_TEXT_NUM_STEPS))
+                {
+                scr_line = 0;
+        # if 1
+                if (curRotate != globalConfig.scrRotate) {
+                    curRotate = globalConfig.scrRotate;
+                tft.setRotation(curRotate);
+                }
+        # endif
+                scr_need_up --;
+                } else
+                scr_line ++;
+            }
+            }
         }
 #endif
     } while (1);
@@ -378,37 +394,43 @@ void myText(int line)
 {
   switch (line) {
     case 0:
-      tft.fillScreen(ILI9341_BLACK);
+      tft.fillScreen(BACKGROUND_COLOR);
+      tft.fill(BACKGROUND_COLOR);
       tft.setCursor(0, 0);
       break;
     case 1:
-      tft.setTextColor(ILI9341_WHITE);
-      tft.setTextSize(3);  tft.println("Lyle Monster!");
+      tft.setTextSize(FIRST_LINE_SIZE);
+      tft.setTextColor(FIRST_LINE_COLOR);
+      tft.println(FIRST_LINE_TEXT);
       tft.println();
       break;
     case 2:
-      tft.setTextColor(ILI9341_YELLOW);
-      tft.setTextSize(5);
-      tft.print( (curRotate & 1) ? "Freq:" : "Fq:");
+      tft.setTextSize(SECOND_LINE_SIZE);              
+      tft.setTextColor(SECOND_LINE_COLOR);
+      tft.print( (curRotate & 1) ? SECND_LINE_LONG : SECND_LINE_SHORT);
       if (BAND_FM == globalConfig.band) {
-        tft.print(dispFreq / 100);
+        UINT Mhz, Khz = (dispFreq / 10) % 10;
+        Mhz = dispFreq / 100;
+        tft.print(Mhz);
         tft.print('.');
-        tft.println((dispFreq / 10) % 10);
+        if ((100 <= Mhz))   // && (0 == (curRotate & 1)))
+            tft.print(Khz);
+        else
+            tft.println(Khz);
       } else 
         tft.println(dispFreq);
-      tft.setTextSize(3);
-      if (0 == (curRotate & 1))
-          tft.println();
       break;
     case 3:
-      tft.setTextColor(ILI9341_GREEN);
-      tft.setTextSize(4);  tft.print("W1ZTL ");
-      if (0 == (curRotate & 1))  tft.println();
+      tft.setTextSize(SPACE_LINE_SIZE);
+      tft.println();
+      tft.setTextColor(THIRD_LINE_COLOR);
+      tft.setTextSize(THIRD_LINE_SIZE);  tft.print(THIRD_LINE_TEXT);
       break;
     case 4:
-      tft.setTextSize(3);  tft.println("Workshop");
-      if (0 != (curRotate & 1))  tft.println();
-      tft.setTextSize(1);
+      if (0 == (curRotate & 1))  tft.println();
+      tft.setTextSize(FOURTH_LINE_SIZE);  tft.println(FOURTH_LINE_TEXT);
+      // if (0 != (curRotate & 1))  tft.println();
+      tft.setTextSize(DEBUG_TEXT_SIZE);
       break;
   }
 }
@@ -428,7 +450,7 @@ int dbgText(int line)
     buildLine[j] = '\0';
   tft.println(buildLine);
   if (curRotate & 1)
-   return (line >= (8 -1));
+   return (line >= (12 -1));
  return (line >= (16 -1));
 }
 #endif

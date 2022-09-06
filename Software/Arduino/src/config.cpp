@@ -9,6 +9,7 @@
 #if USE_EEPROM
 #include <EEPROM.h>
 #endif
+#include "display.h"
 
 /* Where in the EEPROM space do we start */
 #define STARTING_LOCATION 0

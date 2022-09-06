@@ -29,7 +29,6 @@ enum sel_features {
 
 // Configuration memory
 #define SIZE_OF_CONFIG_VERS 8
-# define DEFAULT_ROTATE    3
 
 typedef struct {
     char version[SIZE_OF_CONFIG_VERS];
