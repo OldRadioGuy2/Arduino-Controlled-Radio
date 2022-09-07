@@ -7,14 +7,14 @@
 #define NANO_ATMEGA_BOARD  1
 #define NANO_BLE_BOARD     2
 
-#if 0
+#if 1
 # define PLATFORM    NANO_ATMEGA_BOARD
 #else
 # define PLATFORM    NANO_BLE_BOARD
 #endif
 
 #ifdef BUILD_APPLICATION
-# define BUILD_GUI_LIB  1
+# define BUILD_GUI_LIB  0
 #endif
 
 #ifdef BUILD_TEST_PROGRAM
