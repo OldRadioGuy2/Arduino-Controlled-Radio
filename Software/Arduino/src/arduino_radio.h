@@ -10,7 +10,7 @@ typedef char CHAR;
 typedef unsigned char UCHAR;
 typedef char BOOL;
 
-#define MAX_VOLUME  100
+#define MAX_VOLUME  63
 
 enum band_selections {
     BAND_AM,

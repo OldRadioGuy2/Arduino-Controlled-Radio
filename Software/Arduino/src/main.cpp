@@ -78,6 +78,16 @@ void setup(void)
     // rx.setup(RESET_PIN, -1, 1, SI473X_ANALOG_AUDIO);
     // Starts defaul radio function and band (FM; from 84 to 108 MHz; 103.9 MHz; step 100kHz)
 #endif
+
+/* Analog refrence for A to D */
+    // if (globalConfig.featureEn[FEATURE_VOLUME])
+    pinMode(analogVolumePin, INPUT);
+#if PLATFORM == NANO_ATMEGA_BOARD
+    analogReference( DEFAULT );
+#endif
+#if PLATFORM == NANO_BLE_BOARD
+    analogReference( AR_INTERNAL2V4 );
+#endif
 }
 
 const command command_list []= {
@@ -181,8 +191,11 @@ void loop(void)
     Serial.print("  Self Diag : 0x"); Serial.println(chRd, HEX); 
 #endif
 
-    do  {
+    do {
+#if BUILD_RADIO || BUILD_GUI_LIB
         UINT desiredFrequency = globalConfig.frequency[ (int)globalConfig.band ];
+#endif
+
 #if BUILD_RADIO
         /* control the radio if globalConfig has changed */
         if (curBand != globalConfig.band) 
@@ -253,7 +266,7 @@ void loop(void)
 #endif
 
         /* service the serial port - command line interface */
-        if (Serial.available()) {
+        while (Serial.available()) {
             char key = Serial.read();
 
             if ('\n' == key) {
