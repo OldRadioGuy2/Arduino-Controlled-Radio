@@ -13,6 +13,9 @@ Software Controlled Radio - Command Definitions
 #define analogBandSwitch     1
 #define MAX_ANALOG_VALUE    (1 << 10)
 
+#define BLE_TxPin      11 
+#define BLE_RxPin      12
+
 typedef const char * processor_t(char * cmd);
 typedef processor_t * processor_p;
 

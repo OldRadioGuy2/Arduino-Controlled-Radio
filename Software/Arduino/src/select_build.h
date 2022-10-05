@@ -24,7 +24,9 @@
 #if PLATFORM == NANO_ATMEGA_BOARD
 # define USE_EEPROM  1
 # define BUILD_RADIO  1
+# define SOFT_SERIAL  1
 #else
 # define USE_EEPROM  0
 # define BUILD_RADIO  0
+# define SOFT_SERIAL  1
 #endif

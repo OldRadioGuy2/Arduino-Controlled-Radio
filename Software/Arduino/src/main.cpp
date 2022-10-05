@@ -40,6 +40,12 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_R
 SI4735 rx;
 #endif
 
+#if SOFT_SERIAL
+# include <SoftwareSerial.h>
+
+SoftwareSerial BLE_Serial (BLE_RxPin, BLE_TxPin);
+#endif
+
 #define CMD_BUF_SIZE 40
 char cmd_buffer[CMD_BUF_SIZE];
 
@@ -54,6 +60,13 @@ void setup(void)
   digitalWrite(RESET_PIN, HIGH);
 #endif
 
+#if SOFT_SERIAL
+    pinMode(BLE_RxPin, INPUT);
+    pinMode(BLE_TxPin, OUTPUT);
+
+    BLE_Serial.begin (9600);
+#endif
+
   pinMode( triggerPin, OUTPUT);     // output to trigger 555 timer
   pinMode( pulseInPin, INPUT);      // pulse input
   digitalWrite(triggerPin, HIGH);
@@ -61,6 +74,9 @@ void setup(void)
   Serial.println("Arduino Controlled Radio.");
 #if BUILD_GUI_LIB
   tft.begin();
+#endif
+#if SOFT_SERIAL
+    BLE_Serial.println("Hello");
 #endif
 #if BUILD_RADIO
 // Look for the Si47XX I2C bus address
@@ -266,13 +282,32 @@ void loop(void)
 #endif
 
         /* service the serial port - command line interface */
-        while (Serial.available()) {
-            char key = Serial.read();
-
+#if SOFT_SERIAL
+        while ( (BLE_Serial.available()) ||
+                (Serial.available()) )
+#else
+        while (Serial.available())
+#endif
+        {
+            char key;
+#if SOFT_SERIAL
+            if  (Serial.available())
+                key = Serial.read();
+            else
+                key = BLE_Serial.read();
+#else
+            key = Serial.read();
+#endif
             if ('\n' == key) {
+                const char * resStr;
                 cmd_buffer[cmd_in] = '\0';
-                Serial.write( process_cmd_line() );
+                resStr = process_cmd_line();
+                Serial.write( resStr );
                 Serial.print('\n');
+#if SOFT_SERIAL
+                BLE_Serial.write( resStr );
+                BLE_Serial.print('\n');
+#endif
                 cmd_in = 0;
             } else
             if (0x08 == key) {
