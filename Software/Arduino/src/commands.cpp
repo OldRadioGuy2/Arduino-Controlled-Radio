@@ -30,6 +30,37 @@ int my_atoi(char * str)
      return num;
 }
 
+unsigned int measure_Cap_timing(void)
+{
+  unsigned long start, end, res;
+
+     digitalWrite(triggerPin, LOW);  // set chargePin HIGH and capacitor charging
+     delayMicroseconds(5);
+     start = micros();
+     digitalWrite(triggerPin, HIGH);  // set chargePin HIGH and capacitor charging
+#if 0
+     while (0 != digitalRead(pulseInPin)) ;
+#elif 0
+     // res = pulseIn(pulseInPin, HIGH, 3000000UL);
+     res = pulseInLong(pulseInPin, HIGH, 3000000UL);
+#else
+     res = 0;
+     while ((0 != digitalRead(pulseInPin)) &&
+            (res < 3000000))
+       res ++;
+#endif
+     end = micros();
+ //  interrupts();
+
+   /* dicharge the capacitor  */
+      Serial.print( res);       // print the value to serial port
+      Serial.print(" counts, ");      // print units and carriage return
+      Serial.print( (end - start) >> 2);       // print the value to serial port
+      Serial.println(" u-sec.");      // print units and carriage return
+
+    return (unsigned int)res;
+}
+
 // Absolute frequecy, FM is in 10's of killihertz
 const char * set_freq(char * cmd)
 {
@@ -71,39 +102,6 @@ const char * set_volume(char * cmd)
     return dummyRet;
 }
 
-// Enable and disable are 1-based
-//  FEATURE_FREQ_CAP = 1,
-//  FEATURE_VOLUME = 2,
-//  FEATURE_BAND_SW = 3,
-//  FEATURE_DISPLAY = 4,
-const char * enable_feature(char * cmd)
-{
-    int featId = my_atoi(& cmd[2]);
-    if ((0 < featId) && (NUM_FEATURES >= featId)) {
-          Serial.print(" Enable feature ");
-          Serial.println(featId);
-          globalConfig.featureEn[featId -1] = 1;
-     }
-    return dummyRet;
-}
-const char * disable_feature(char * cmd)
-{
-    int featId = my_atoi(& cmd[2]);
-    if ((0 < featId) && (NUM_FEATURES >= featId)) {
-          Serial.print(" Disable feature ");
-          Serial.println(featId);
-          globalConfig.featureEn[featId -1] = 0;
-    }
-    return dummyRet;
-}
-
-const char * save_cfg(char * cmd)
-{
-    Serial.println( " Save config.");
-     save_config();
-     return dummyRet;
-}
-
 const char * get_freq(char * cmd)
 {
      UINT currentFrequency;
@@ -129,6 +127,105 @@ const char * get_freq(char * cmd)
      return dummyRet;
 }
 
+const char * get_sig_lvl(char * cmd)
+{
+          Serial.println( " Sig Level not imp." );
+          return dummyRet;
+}
+
+const char * get_band(char * cmd)
+{
+          int band = globalConfig.band;
+#if 1
+          Serial.print( " Band ");
+          Serial.println( band );
+#else
+          Serial.println(bandStrings[ (int)band ]);
+#endif
+          return dummyRet;
+}
+const char * get_volume(char * cmd)
+{
+          Serial.print( " Volume ");
+          Serial.println( globalConfig.volume );
+          return dummyRet;
+}
+
+const char * create_band(char * cmd)
+{
+          Serial.println( " Create Band not imp." );
+          return dummyRet;
+}
+
+const char * delete_band(char * cmd)
+{
+          Serial.println( " Delete Band not imp." );
+          return dummyRet;
+}
+
+const char * calibrate_tuner(char * cmd)
+{
+          Serial.println( " Cal Tunernot imp." );
+          return dummyRet;
+}
+
+const char * calibrate_band(char * cmd)
+{
+          Serial.println( " Cal Band not imp." );
+          return dummyRet;
+}
+
+const char * volume_feature(char * cmd)
+{
+    int featEn = my_atoi(& cmd[2]);
+    if ((0 == featEn) || (1 == featEn)) {
+          Serial.print(" Enable volume ");
+          Serial.println(featEn);
+          globalConfig.featureEn[FEATURE_VOLUME] = featEn;
+     }
+    return dummyRet;
+}
+
+const char * tuning_feature(char * cmd)
+{
+    int featEn = my_atoi(& cmd[2]);
+    if ((0 == featEn) || (1 == featEn)) {
+          Serial.print(" Enable tuning ");
+          Serial.println(featEn);
+          globalConfig.featureEn[FEATURE_FREQ_CAP] = featEn;
+     }
+    return dummyRet;
+}
+
+const char * band_sw_feature(char * cmd)
+{
+    int featEn = my_atoi(& cmd[2]);
+    if ((0 == featEn) || (1 == featEn)) {
+          Serial.print(" Enable Band switch ");
+          Serial.println(featEn);
+          globalConfig.featureEn[FEATURE_BAND_SW] = featEn;
+     }
+    return dummyRet;
+}
+
+const char * display_feature(char * cmd)
+{
+    int featEn = my_atoi(& cmd[2]);
+    if ((0 == featEn) || (1 == featEn)) {
+          Serial.print(" Enable display ");
+          Serial.println(featEn);
+          globalConfig.featureEn[FEATURE_DISPLAY] = featEn;
+     }
+    return dummyRet;
+}
+
+const char * save_cfg(char * cmd)
+{
+    Serial.println( " Save config.");
+     save_config();
+     return dummyRet;
+}
+
 const char * screen_rotate(char * cmd)
 {
     int rote = my_atoi(& cmd[2]);
@@ -142,31 +239,8 @@ const char * screen_rotate(char * cmd)
 
 const char * read_Cap(char * cmd)
 {
-  unsigned long start, end, res;
-
-     digitalWrite(triggerPin, LOW);  // set chargePin HIGH and capacitor charging
-     delayMicroseconds(5);
-     start = micros();
-     digitalWrite(triggerPin, HIGH);  // set chargePin HIGH and capacitor charging
-#if 0
-     while (0 != digitalRead(pulseInPin)) ;
-#elif 0
-     // res = pulseIn(pulseInPin, HIGH, 3000000UL);
-     res = pulseInLong(pulseInPin, HIGH, 3000000UL);
-#else
-     res = 0;
-     while ((0 != digitalRead(pulseInPin)) &&
-            (res < 3000000))
-       res ++;
-#endif
-     end = micros();
- //  interrupts();
-
-   /* dicharge the capacitor  */
-      Serial.print( res);       // print the value to serial port
-      Serial.print(" counts, ");      // print units and carriage return
-      Serial.print( (end - start) >> 2);       // print the value to serial port
-      Serial.println(" u-sec.");      // print units and carriage return
+    // unsigned int res = 
+    measure_Cap_timing();
 
     return dummyRet;
 }

@@ -49,3 +49,5 @@ extern CONFIG globalConfig;
 
 extern SI4735 rx;
 
+extern CHAR BLE_command;
+

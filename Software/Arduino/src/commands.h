@@ -28,13 +28,24 @@ const char * read_Cap(char * cmd);
 processor_t set_freq;
 processor_t set_band;
 processor_t set_volume;
+
+processor_t get_sig_lvl;
 processor_t get_freq;
-processor_t enable_feature;
-processor_t disable_feature;
+processor_t get_band;
+processor_t get_volume;
+
+processor_t volume_feature;
+processor_t tuning_feature;
+processor_t band_sw_feature;
+processor_t display_feature;
 processor_t save_cfg;
 #if BUILD_GUI_LIB
 processor_t screen_rotate;
 #endif
+processor_t create_band;
+processor_t delete_band;
+processor_t calibrate_tuner;
+processor_t calibrate_band;
 
 // extern command command_list[];
 // Error codes (commands always return * strings)

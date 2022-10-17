@@ -40,14 +40,17 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_R
 SI4735 rx;
 #endif
 
+#define CMD_BUF_SIZE 40
+
 #if SOFT_SERIAL
 # include <SoftwareSerial.h>
 
 SoftwareSerial BLE_Serial (BLE_RxPin, BLE_TxPin);
+
+char ble_cmd_buffer[CMD_BUF_SIZE];
 #endif
 
-#define CMD_BUF_SIZE 40
-char cmd_buffer[CMD_BUF_SIZE];
+char dbg_cmd_buffer[CMD_BUF_SIZE];
 
 /* Arduino defined entry point.
  * do some initialization */
@@ -110,10 +113,19 @@ const command command_list []= {
     {"SF", & set_freq },    // Set Frequency: SF,float_frequency (KHz)
     {"SB", & set_band },    // Set Band: SB,float_lower_limit, float_upper_limit 
     {"SV", & set_volume },  // write the configuration
-    {"EN", & enable_feature },    // turn on a feature
-    {"DS", & disable_feature },   // turn off a feature
-    {"WR", & save_cfg },    // write the configuration
+    {"EV", & volume_feature },    // turn on a feature
+    {"ET", & tuning_feature },   // turn off a feature
+    {"EB", & band_sw_feature },    // turn on a feature
+    {"ED", & display_feature },   // turn off a feature
+    {"GS", & get_sig_lvl },    // Get Current Frequency: GF. Returns float frequency in KHz
+    {"GB", & get_band },    // Get Current Frequency: GF. Returns float frequency in KHz
+    {"GV", & get_volume },    // Get Current Frequency: GF. Returns float frequency in KHz
     {"GF", & get_freq },    // Get Current Frequency: GF. Returns float frequency in KHz
+    {"WR", & save_cfg },    // write the configuration
+    {"CB", & create_band }, // 
+    {"DB", & delete_band }, // 
+    {"CT", & calibrate_tuner }, // 
+    {"CB", & calibrate_band }, // 
 #if BUILD_GUI_LIB
     {"RO", &  screen_rotate },
 #endif
@@ -137,9 +149,19 @@ void print_help(void)
     Serial.write( "\n" );
 }
 
-const char * process_cmd_line(void)
+CHAR BLE_command = 0;
+
+const char * process_cmd_line(char is_ble)
 {
+    char * cmd_buffer;
     unsigned int i = 0;
+#if SOFT_SERIAL
+    if (is_ble)
+        cmd_buffer = ble_cmd_buffer;
+    else
+#endif
+        cmd_buffer = dbg_cmd_buffer;
+
     if ('?' == cmd_buffer[0]) {
         print_help();
         return "";
@@ -165,7 +187,10 @@ const char * process_cmd_line(void)
  * don't return */
 void loop(void)
 {
-    int cmd_in = 0; // start with empty buffer
+    int dbg_cmd_in = 0; // start with empty buffer
+#if SOFT_SERIAL
+    int ble_cmd_in = 0; // start with empty buffer
+#endif
 #if BUILD_GUI_LIB
     uint8_t chRd;
     uint8_t scr_line = 0;
@@ -283,47 +308,60 @@ void loop(void)
 
         /* service the serial port - command line interface */
 #if SOFT_SERIAL
-        while ( (BLE_Serial.available()) ||
-                (Serial.available()) )
-#else
-        while (Serial.available())
-#endif
+        while (BLE_Serial.available())
         {
-            char key;
-#if SOFT_SERIAL
-            if  (Serial.available())
-                key = Serial.read();
-            else
-                key = BLE_Serial.read();
-#else
-            key = Serial.read();
+            char key = BLE_Serial.read();
+
+            if ( ('\r' == key) || ('\n' == key) )
+            {
+                const char * resStr;
+                ble_cmd_buffer[ble_cmd_in] = '\0';
+                BLE_command = 1;
+                resStr = process_cmd_line(1);
+                BLE_Serial.write( resStr );
+                BLE_Serial.print("\n\r");
+                ble_cmd_in = 0;
+            } else
+            if ( // ('\n' != key) && (0x1B != key) &&
+                (CMD_BUF_SIZE -1 > ble_cmd_in) ) {
+                    ble_cmd_buffer[ble_cmd_in] = key;
+                    BLE_Serial.print(key);          // Echo !
+                    ble_cmd_in ++;
+            }
+        }
 #endif
+        while (Serial.available())
+        {
+            char key = Serial.read();
             if ('\n' == key) {
                 const char * resStr;
-                cmd_buffer[cmd_in] = '\0';
-                resStr = process_cmd_line();
+                dbg_cmd_buffer[dbg_cmd_in] = '\0';
+                BLE_command = 0;
+                resStr = process_cmd_line(0);
                 Serial.write( resStr );
                 Serial.print('\n');
-#if SOFT_SERIAL
+#if SOFT_SERIAL && 0
                 BLE_Serial.write( resStr );
                 BLE_Serial.print('\n');
 #endif
-                cmd_in = 0;
+                dbg_cmd_in = 0;
             } else
             if (0x08 == key) {
-                if (1 <= cmd_in) {
+                if (1 <= dbg_cmd_in) {
                     Serial.print('\r');
-                    cmd_in --;
-                    cmd_buffer[cmd_in] = '\0';
-                    if (cmd_in)
-                        Serial.write(cmd_buffer, cmd_in);
+                    dbg_cmd_in --;
+                    dbg_cmd_buffer[dbg_cmd_in] = '\0';
+                    if (dbg_cmd_in)
+                        Serial.write(dbg_cmd_buffer, dbg_cmd_in);
                 }
             } else
             if (('\r' != key) && (0x1B != key) &&
-                (CMD_BUF_SIZE -1 > cmd_in) ) {
-                    cmd_buffer[cmd_in] = key;
-                    Serial.print(key);
-                    cmd_in ++;
+                (CMD_BUF_SIZE -1 > dbg_cmd_in) ) {
+                    if (('a' <= key) && ('z' >= key))
+                        key -= ('a' - 'A');
+                    dbg_cmd_buffer[dbg_cmd_in] = key;
+                    Serial.print(key);          // Echo !
+                    dbg_cmd_in ++;
             }
         }
 
