@@ -52,6 +52,8 @@ char ble_cmd_buffer[CMD_BUF_SIZE];
 
 char dbg_cmd_buffer[CMD_BUF_SIZE];
 
+char fmt_rsp_buffer[RSP_BUF_SIZE];
+
 /* Arduino defined entry point.
  * do some initialization */
 void setup(void)
@@ -122,7 +124,7 @@ const command command_list []= {
     {"GV", & get_volume },    // Get Current Frequency: GF. Returns float frequency in KHz
     {"GF", & get_freq },    // Get Current Frequency: GF. Returns float frequency in KHz
     {"WR", & save_cfg },    // write the configuration
-    {"CB", & create_band }, // 
+    {"MB", & create_band }, // 
     {"DB", & delete_band }, // 
     {"CT", & calibrate_tuner }, // 
     {"CB", & calibrate_band }, // 
@@ -162,7 +164,12 @@ const char * process_cmd_line(char is_ble)
 #endif
         cmd_buffer = dbg_cmd_buffer;
 
-    if ('?' == cmd_buffer[0]) {
+    fmt_rsp_buffer[0] = '\0';
+    BLE_command = is_ble;
+
+    if (('?' == cmd_buffer[0]) &&
+        (0 == is_ble))
+    {
         print_help();
         return "";
     }
@@ -316,16 +323,17 @@ void loop(void)
             {
                 const char * resStr;
                 ble_cmd_buffer[ble_cmd_in] = '\0';
-                BLE_command = 1;
                 resStr = process_cmd_line(1);
+                BLE_Serial.print("{");
                 BLE_Serial.write( resStr );
-                BLE_Serial.print("\n\r");
+                BLE_Serial.write( fmt_rsp_buffer );
+                BLE_Serial.print("}\n\r");
                 ble_cmd_in = 0;
             } else
             if ( // ('\n' != key) && (0x1B != key) &&
                 (CMD_BUF_SIZE -1 > ble_cmd_in) ) {
                     ble_cmd_buffer[ble_cmd_in] = key;
-                    BLE_Serial.print(key);          // Echo !
+            //      BLE_Serial.print(key);          // Echo !
                     ble_cmd_in ++;
             }
         }
@@ -336,14 +344,10 @@ void loop(void)
             if ('\n' == key) {
                 const char * resStr;
                 dbg_cmd_buffer[dbg_cmd_in] = '\0';
-                BLE_command = 0;
                 resStr = process_cmd_line(0);
                 Serial.write( resStr );
+                Serial.write( fmt_rsp_buffer );
                 Serial.print('\n');
-#if SOFT_SERIAL && 0
-                BLE_Serial.write( resStr );
-                BLE_Serial.print('\n');
-#endif
                 dbg_cmd_in = 0;
             } else
             if (0x08 == key) {

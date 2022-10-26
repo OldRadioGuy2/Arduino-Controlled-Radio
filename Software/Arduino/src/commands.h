@@ -16,6 +16,8 @@ Software Controlled Radio - Command Definitions
 #define BLE_TxPin      11 
 #define BLE_RxPin      12
 
+#define RSP_BUF_SIZE 40
+
 typedef const char * processor_t(char * cmd);
 typedef processor_t * processor_p;
 
@@ -52,5 +54,8 @@ processor_t calibrate_band;
 // #define SUCCESS "0"
 // #define INVALID_COMMAND "-1"
 // #define INVALID_ARG "-2"
+
+extern char dbg_verbose;
+extern char fmt_rsp_buffer[RSP_BUF_SIZE];
 
 #endif

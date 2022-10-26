@@ -1,0 +1,30 @@
+
+Using a Bus Pirate for a BLE modem.
+
+Nano Pin D12 -  gray MOSI/TX
+Nano Pin D11 - black MISO/RX
+Nano Ground  - brown GND
+
+Enter:
+m
+3 (serial)
+5 (9600)
+1 (8 bit)
+1 (1 stop)
+1 (idle high)
+2 (normal output)
+W (power supplies on)
+P (outputs enable)
+(1) (UART bridge)
+y
+
+Adafruit ILI9341 display connection:
+
+Nano Pin D9 - Clk
+Nano Pin D8 - MISO
+Nano Pin D7 - MOSI
+Nano Pin D6 - CS
+Nano Pin D5 - D/C
+Nano Pin D4 - Rst (optional)
+
+Nano Pin VIN - 5 Volts for display
