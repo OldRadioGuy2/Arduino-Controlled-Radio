@@ -1,6 +1,9 @@
 // This is the 'classic' fixed-space bitmap font for Adafruit_GFX since 1.0.
 // See gfxfont.h for newer custom bitmap font info.
 
+#include "../../src/select_build.h"
+#if BUILD_GUI_LIB
+
 #ifndef FONT5X7_H
 #define FONT5X7_H
 
@@ -141,3 +144,5 @@ static inline void avoid_unused_const_variable_compiler_warning(void) {
 }
 
 #endif // FONT5X7_H
+
+#endif  // BUILD_RADIO whole file

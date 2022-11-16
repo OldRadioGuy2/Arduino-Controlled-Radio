@@ -46,6 +46,9 @@
  *
  */
 
+#include "../../src/select_build.h"
+#if BUILD_GUI_LIB
+
 #include "Adafruit_ILI9341.h"
 #ifndef ARDUINO_STM32_FEATHER
 #include "pins_arduino.h"
@@ -327,3 +330,5 @@ uint8_t Adafruit_ILI9341::readcommand8(uint8_t commandByte, uint8_t index) {
   sendCommand(0xD9, &data, 1); // Set Index Register
   return Adafruit_SPITFT::readcommand8(commandByte);
 }
+
+#endif  // BUILD_RADIO whole file

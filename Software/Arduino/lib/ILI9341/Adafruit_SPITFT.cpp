@@ -31,6 +31,9 @@
  * BSD license, all text here must be included in any redistribution.
  */
 
+#include "../../src/select_build.h"
+#if BUILD_GUI_LIB
+
 #if !defined(__AVR_ATtiny85__) // Not for ATtiny, at all
 
 #include "Adafruit_SPITFT.h"
@@ -2538,3 +2541,5 @@ inline void Adafruit_SPITFT::TFT_RD_LOW(void) {
 }
 
 #endif // end __AVR_ATtiny85__
+
+#endif  // BUILD_RADIO whole file

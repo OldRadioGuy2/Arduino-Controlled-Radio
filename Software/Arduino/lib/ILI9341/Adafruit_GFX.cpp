@@ -31,6 +31,9 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "../../src/select_build.h"
+#if BUILD_GUI_LIB
+
 #include "Adafruit_GFX.h"
 #include "glcdfont.c"
 #ifdef __AVR__
@@ -713,3 +716,6 @@ void Adafruit_GFX::image(PImage & img, uint16_t x, uint16_t y) {
 }
 
 #endif
+
+#endif  // BUILD_RADIO whole file
+
