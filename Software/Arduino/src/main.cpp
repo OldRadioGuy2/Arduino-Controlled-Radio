@@ -183,6 +183,8 @@ const char * process_cmd_line(char is_ble)
     return " not found";    // " -1";
 }
 
+CHAR forceBand = 0;
+
 #if BUILD_GUI_LIB
  UINT  dispFreq = 999;
  uint8_t curRotate = 255;
@@ -241,54 +243,62 @@ void loop(void)
 
     do {
 #if BUILD_RADIO || BUILD_GUI_LIB
-        UINT desiredFrequency = globalConfig.frequency[ (int)globalConfig.band ];
+        UINT desiredFreq = globalConfig.actFreq[ (int)globalConfig.actBand ];
 #endif
 
 #if BUILD_RADIO
         /* control the radio if globalConfig has changed */
-        if (curBand != globalConfig.band) 
+        if ((curBand != globalConfig.actBand) || (0 != forceBand))
         {
-            switch (curBand = globalConfig.band) {
-                case BAND_AM:
+            BAND_CFG * bandCfg;
+
+            curBand = globalConfig.actBand;
+            bandCfg = & globalConfig.bands[(int)curBand];
+
+            switch (bandCfg->mode) {
+                case MODE_AM:
                     Serial.print( "Setting AM " );
-                    rx.setAM(520, 1750, desiredFrequency, 10);
-                    rx.setSeekAmLimits(520, 1750);
+                    rx.setAM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 10);
+                    rx.setSeekAmLimits(bandCfg->minFreq, bandCfg->maxFreq);
                     rx.setSeekAmSpacing(10); // spacing 10kHz
                     break;
-                default:
-                    curBand = globalConfig.band = BAND_FM;
-                case BAND_FM:
+                case MODE_FM:
                     Serial.print( "Setting FM " );
-                    rx.setFM(8400, 10800, desiredFrequency, 20);
+                    rx.setFM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 20);
                     rx.setSeekFmSpacing(2);
                     break;
-                case BAND_SSB:
+                case MODE_SSB:
                     Serial.print( "Setting SSB " );
-                    rx.setAM(100, 30000, desiredFrequency, 5);
-                    rx.setSeekAmLimits(100, 30000);   // Range for seeking.
+                    rx.setAM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 5);
+                    rx.setSeekAmLimits(bandCfg->minFreq, bandCfg->maxFreq);   // Range for seeking.
                     rx.setSeekAmSpacing(1); // spacing 1kHz
                     break;
+                case MODE_NOT_VALID:
+                default:
+                    Serial.print( "Mode not valid " );
+                    break;
             }
-            Serial.println( desiredFrequency );
+            Serial.println( desiredFreq );
+            forceBand = 0;
             delay(500);
             first_set_band = true;
-            currentFrequency = desiredFrequency;
+            currentFrequency = desiredFreq;
         } else        
             currentFrequency = rx.getFrequency();
-        if ((currentFrequency != desiredFrequency) &&
+        if ((currentFrequency != desiredFreq) &&
             (first_set_band == true))
         {
             char cur_dir = 2, flip_count = 0;
 
             Serial.print( "Tuning to " );
-            Serial.print( desiredFrequency );
+            Serial.print( desiredFreq );
             do  {
                 if (5 < flip_count)
                 {
                     Serial.print( " failed" );
                     break;
                 }
-                if (currentFrequency < desiredFrequency)
+                if (currentFrequency < desiredFreq)
                 {
                     rx.frequencyUp();
                     if (1 != cur_dir)
@@ -301,13 +311,13 @@ void loop(void)
                     cur_dir = 0;
                 }
                 currentFrequency = rx.getFrequency();
-            } while (currentFrequency != desiredFrequency);
+            } while (currentFrequency != desiredFreq);
             Serial.println(".");
         }
 
-        if (curVol != globalConfig.volume)
+        if (curVol != globalConfig.actVolume)
         {
-            rx.setVolume(curVol = globalConfig.volume);
+            rx.setVolume(curVol = globalConfig.actVolume);
             Serial.print("Setting volume ");
             Serial.println(curVol);
         }
@@ -380,9 +390,9 @@ void loop(void)
             pinMode(digitalBandSwitch, INPUT);
             pinA1 = digitalRead(digitalBandSwitch);
             if (pinA1)
-                newBand = BAND_FM;
+                newBand = 0;
             else
-                newBand = BAND_AM;
+                newBand = 1;
 #else
             pinA1 = analogRead(analogBandSwitch);
             if (pinA1 > (MAX_ANALOG_VALUE / 2))
@@ -390,11 +400,11 @@ void loop(void)
             else
                 newBand = BAND_AM;
 #endif
-            if (globalConfig.band != newBand)
+            if (globalConfig.actBand != newBand)
             {
                 Serial.print("Band Sw now");
-                Serial.println(bandStrings[ (int)newBand]);
-                globalConfig.band = newBand;
+                Serial.println(modeStrings[ (int)newBand]);
+                globalConfig.actBand = newBand;
             }
         }
         /* Feature 1:
@@ -414,7 +424,7 @@ void loop(void)
                 Serial.println(pinA0);
                 lastVolume = pinA0;
             }
-            globalConfig.volume = (pinA0 * MAX_VOLUME) / (MAX_ANALOG_VALUE -1);
+            globalConfig.actVolume = (pinA0 * MAX_VOLUME) / (MAX_ANALOG_VALUE -1);
         }
         /* Feature 4:
          * update a display for output */

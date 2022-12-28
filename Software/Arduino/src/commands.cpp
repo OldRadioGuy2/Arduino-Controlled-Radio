@@ -13,18 +13,20 @@ const char bad_Ret[] = "1";
 
 char dbg_verbose = 1;
 
-const char * const bandStrings[NUM_BANDS] = {
+const char * const modeStrings[NUM_MODES] = {
+     " not valid",
      " AM",
      " FM",
      " SSB"
 };
 
-int my_atoi(char * str)
+int my_atoi(char * str, int * inp)
 {
-     char ch;
-     int num = 0; int valid_chars = 0;
+     char ch, valid_chars = 0;
+     int index, num = 0;
+     index = * inp;
      do {
-          ch = * str;
+          ch = str[index];
           if ((ch >= '0') && (ch <= '9'))
           {
                num = (num * 10) + (ch - '0');
@@ -32,9 +34,44 @@ int my_atoi(char * str)
           } else 
           if ((',' == ch) && (valid_chars))
                break;
-          str ++;
+          index ++;
      } while ('\0' != ch);
+     * inp = index;
      return num;
+}
+int my_mode(char * str, int * inp)
+{
+     char ch, valid_chars = 0;
+     int index, mode = MODE_NOT_VALID;
+     index = * inp;
+     do {
+          ch = str[index];
+          if ((ch == 'a') || (ch == 'A'))
+          {
+               mode = MODE_AM;
+               valid_chars ++;
+          } else 
+          if ((ch == 'f') || (ch == 'F'))
+          {
+               mode = MODE_FM;
+               valid_chars ++;
+          } else 
+          if ((ch == 's') || (ch == 'S'))
+          {
+               mode = MODE_FM;
+               valid_chars ++;
+          } else 
+          if ((ch == 'm') || (ch == 'M') ||
+              (ch == 'b') || (ch == 'B'))
+          {
+               valid_chars ++;
+          } else 
+          if ((',' == ch) && (valid_chars))
+               break;
+          index ++;
+     } while ('\0' != ch);
+     * inp = index;
+     return mode;
 }
 
 int my_sprintf(char * buf, int value)
@@ -102,15 +139,19 @@ unsigned int measure_Cap_timing(void)
 // Absolute frequecy, FM is in 10's of killihertz
 const char * set_freq(char * cmd)
 {
-    int freq = my_atoi(& cmd[2]);
+    int cmdStart = 2;
+    int band = globalConfig.actBand;
+    int mode = globalConfig.bands[band].mode;
+    int freq = my_atoi(cmd, & cmdStart);
+
     if ((1 <= dbg_verbose) || (0 != BLE_command)) {
           Serial.print(" Set Frequency ");
           Serial.println(freq);
      }
     if (0 != freq) {
-        if (BAND_FM == globalConfig.band)
+        if (MODE_FM == mode)
              freq *= 10;
-        globalConfig.frequency[ (int)globalConfig.band] = freq;
+        globalConfig.actFreq[ band ] = freq;
      return goodRet;
     }
     return bad_Ret;
@@ -122,13 +163,19 @@ const char * set_freq(char * cmd)
 //  BAND_SSB = 3 
 const char * set_band(char * cmd)
 {
-    int band = my_atoi(& cmd[2]);
+    int cmdStart = 2;
+    int band = my_atoi(cmd, & cmdStart);
+    int mode;
     if ((0 < band) && (NUM_BANDS >= band)) {
+         band --;
+         globalConfig.actBand = band;
+         mode = globalConfig.bands[band].mode;
+
          if ((1 <= dbg_verbose) || (0 != BLE_command)) {
                Serial.print(" Set band");
-               Serial.println(bandStrings[ band -1 ]);
+               Serial.print( band );
+               Serial.println( modeStrings[ mode ]);
           }
-        globalConfig.band = band -1;
         return goodRet;
     } 
     Serial.print("Set band ignored.");
@@ -138,13 +185,15 @@ const char * set_band(char * cmd)
 // Absolute volume in  the range of 0 - MAX_VOLUME
 const char * set_volume(char * cmd)
 {
-    int volume = my_atoi(& cmd[2]);
-         if ((1 <= dbg_verbose) || (0 != BLE_command)) {
+    int cmdStart = 2;
+    int volume = my_atoi(cmd, & cmdStart);
+
+    if ((1 <= dbg_verbose) || (0 != BLE_command)) {
           Serial.print(" Set volume ");
           Serial.println(volume);
-      }
+     }
     if (MAX_VOLUME >= volume) {
-        globalConfig.volume = volume;
+        globalConfig.actVolume = volume;
         return goodRet;
     }
     return bad_Ret;
@@ -152,16 +201,17 @@ const char * set_volume(char * cmd)
 
 const char * get_freq(char * cmd)
 {
+     int band = globalConfig.actBand;
+     int mode = globalConfig.bands[band].mode;
      UINT currentFrequency;
-     CHAR band = globalConfig.band;
- 
+
 #if BUILD_RADIO
      Serial.print(" The Si473X frequency is ");
      currentFrequency = rx.getFrequency();
 #else
-     currentFrequency = globalConfig.frequency[ (int)band ];
+     currentFrequency = globalConfig.frequency[ band ];
 #endif
-     if (BAND_FM == band) {
+     if (MODE_FM == mode) {
           UINT kiloHz = currentFrequency % 100;
           currentFrequency = currentFrequency / 100;
           kiloHz = kiloHz / 10;
@@ -170,7 +220,7 @@ const char * get_freq(char * cmd)
           Serial.print(kiloHz);
      } else
           Serial.print(currentFrequency);
-     Serial.println(bandStrings[ (int)band ]);
+     Serial.println( modeStrings[ mode ]);
      sprintf_1(currentFrequency);
 
      return val_Ret;
@@ -184,13 +234,12 @@ const char * get_sig_lvl(char * cmd)
 
 const char * get_band(char * cmd)
 {
-          int band = globalConfig.band;
-#if 1
-          Serial.print( " Band ");
-          Serial.println( band );
-#else
-          Serial.println(bandStrings[ (int)band ]);
-#endif
+     int band = globalConfig.actBand;
+     int mode = globalConfig.bands[band].mode;
+
+     Serial.print( " Band ");
+     Serial.println( band );
+     Serial.println( modeStrings[ mode ]);
      sprintf_1(band);
      return val_Ret;
 }
@@ -198,21 +247,56 @@ const char * get_band(char * cmd)
 const char * get_volume(char * cmd)
 {
      Serial.print( " Volume ");
-     Serial.println( globalConfig.volume );
-     sprintf_1( globalConfig.volume);
+     Serial.println( globalConfig.actVolume );
+     sprintf_1( globalConfig.actVolume);
      return val_Ret;
 }
 
 const char * create_band(char * cmd)
 {
-          Serial.println( " Create Band not imp." );
-          return bad_Ret;
+    int cmdStart = 2;
+    int band = my_atoi(cmd, & cmdStart);
+    int mode = my_mode(cmd, & cmdStart);
+    int fMin = my_atoi(cmd, & cmdStart);
+    int fMax = my_atoi(cmd, & cmdStart);
+    int obw  = my_atoi(cmd, & cmdStart);
+
+    Serial.print( " Create Band " );
+    Serial.print( band );
+    Serial.print( modeStrings[ mode ]);
+    Serial.print( " min " );
+    Serial.print( fMin );
+    Serial.print( " max " );
+    Serial.print( fMax );
+    Serial.print( " bw " );
+    Serial.println( obw );
+    if ((0 <= band) && (NUM_BANDS > band)) {
+        BAND_CFG * bandCfg = & globalConfig.bands[band];
+        bandCfg->mode = mode;
+        bandCfg->bw = obw;
+        bandCfg->minFreq = fMin;
+        bandCfg->maxFreq = fMax;
+        if (band == globalConfig.actBand)
+            forceBand = 1;
+        return goodRet;
+     }
+     return bad_Ret;
 }
 
 const char * delete_band(char * cmd)
 {
-          Serial.println( " Delete Band not imp." );
-          return bad_Ret;
+    int cmdStart = 2;
+    int band = my_atoi(cmd, & cmdStart);
+    Serial.print( " Delete Band " );
+    Serial.println( band );
+    if ((0 <= band) && (NUM_BANDS > band)) {
+        BAND_CFG * bandCfg = & globalConfig.bands[band];
+        bandCfg->mode = MODE_NOT_VALID;
+        if (band == globalConfig.actBand)
+            forceBand = 1;
+        return goodRet;
+    }
+    return bad_Ret;
 }
 
 const char * calibrate_tuner(char * cmd)
@@ -229,7 +313,8 @@ const char * calibrate_band(char * cmd)
 
 const char * volume_feature(char * cmd)
 {
-    int featEn = my_atoi(& cmd[2]);
+    int cmdStart = 2;
+    int featEn = my_atoi(cmd, & cmdStart);
     if ((0 == featEn) || (1 == featEn)) {
           Serial.print(" Enable volume ");
           Serial.println(featEn);
@@ -240,7 +325,8 @@ const char * volume_feature(char * cmd)
 
 const char * tuning_feature(char * cmd)
 {
-    int featEn = my_atoi(& cmd[2]);
+    int cmdStart = 2;
+    int featEn = my_atoi(cmd, & cmdStart);
     if ((0 == featEn) || (1 == featEn)) {
           Serial.print(" Enable tuning ");
           Serial.println(featEn);
@@ -251,7 +337,8 @@ const char * tuning_feature(char * cmd)
 
 const char * band_sw_feature(char * cmd)
 {
-    int featEn = my_atoi(& cmd[2]);
+    int cmdStart = 2;
+    int featEn = my_atoi(cmd, & cmdStart);
     if ((0 == featEn) || (1 == featEn)) {
           Serial.print(" Enable Band switch ");
           Serial.println(featEn);
@@ -262,7 +349,8 @@ const char * band_sw_feature(char * cmd)
 
 const char * display_feature(char * cmd)
 {
-    int featEn = my_atoi(& cmd[2]);
+    int cmdStart = 2;
+    int featEn = my_atoi(cmd, & cmdStart);
     if ((0 == featEn) || (1 == featEn)) {
           Serial.print(" Enable display ");
           Serial.println(featEn);
@@ -274,13 +362,14 @@ const char * display_feature(char * cmd)
 const char * save_cfg(char * cmd)
 {
     Serial.println( " Save config.");
-     save_config();
+    save_config();
     return goodRet;
 }
 
 const char * screen_rotate(char * cmd)
 {
-    int rote = my_atoi(& cmd[2]);
+    int cmdStart = 2;
+    int rote = my_atoi(cmd, & cmdStart);
     Serial.print(" Rotate ");
     Serial.println(rote);
     if ((0 < rote) && (4 >= rote)) {
