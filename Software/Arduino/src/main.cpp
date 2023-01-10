@@ -209,7 +209,7 @@ void loop(void)
     CHAR curBand = NUM_BANDS;
     UCHAR curVol = 255;
     UINT currentFrequency = 0;
-    BOOL first_set_band = false;
+    BOOL mode_is_valid = false;
 #endif
     load_config();
 
@@ -273,23 +273,28 @@ void loop(void)
             curBand = globalConfig.actBand;
             bandCfg = & globalConfig.bands[(int)curBand];
 
+            mode_is_valid = false;
             switch (bandCfg->mode) {
                 case MODE_AM:
                     Serial.print( "Setting AM " );
                     rx.setAM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 10);
                     rx.setSeekAmLimits(bandCfg->minFreq, bandCfg->maxFreq);
                     rx.setSeekAmSpacing(10); // spacing 10kHz
-                    break;
+                    goto mode_good;
                 case MODE_FM:
                     Serial.print( "Setting FM " );
                     rx.setFM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 20);
                     rx.setSeekFmSpacing(2);
-                    break;
+                    goto mode_good;
                 case MODE_SSB:
                     Serial.print( "Setting SSB " );
                     rx.setAM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 5);
                     rx.setSeekAmLimits(bandCfg->minFreq, bandCfg->maxFreq);   // Range for seeking.
                     rx.setSeekAmSpacing(1); // spacing 1kHz
+                mode_good:
+                    if ((bandCfg->minFreq <= desiredFreq) &&
+                        (bandCfg->maxFreq >= desiredFreq))
+                        mode_is_valid = true;
                     break;
                 case MODE_NOT_VALID:
                 default:
@@ -299,12 +304,11 @@ void loop(void)
             Serial.println( desiredFreq );
             forceBand = 0;
             delay(500);
-            first_set_band = true;
             currentFrequency = desiredFreq;
         } else        
             currentFrequency = rx.getFrequency();
         if ((currentFrequency != desiredFreq) &&
-            (first_set_band == true))
+            (mode_is_valid == true))
         {
             char cur_dir = 2, flip_count = 0;
 
