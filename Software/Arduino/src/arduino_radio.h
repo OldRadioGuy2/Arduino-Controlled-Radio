@@ -31,7 +31,7 @@ enum sel_features {
 // Configuration memory
 #define SIZE_OF_CONFIG_VERS 8
 
-#define NUM_BANDS 4
+#define NUM_BANDS 5
 
 typedef struct {
     UCHAR mode;

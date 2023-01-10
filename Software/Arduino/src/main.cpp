@@ -241,6 +241,24 @@ void loop(void)
     Serial.print("  Self Diag : 0x"); Serial.println(chRd, HEX); 
 #endif
 
+#if BUILD_RADIO && 1
+     curBand = 0;
+     do {
+        int mode;
+        BAND_CFG * bandCfg = & globalConfig.bands[(int)curBand];
+        Serial.print("Band");   Serial.print(curBand, DEC);
+        Serial.print(" from "); Serial.print(bandCfg->minFreq);
+        Serial.print(" to ");   Serial.print(bandCfg->maxFreq);
+        mode = bandCfg->mode;
+        if (NUM_MODES <= mode)
+            mode = MODE_NOT_VALID;
+        // Serial.print(" ");
+        Serial.print(modeStrings[ mode ]);
+        Serial.print(" bw ");   Serial.println(bandCfg->bw); 
+        curBand ++;
+     } while (curBand < NUM_BANDS);
+#endif
+
     do {
 #if BUILD_RADIO || BUILD_GUI_LIB
         UINT desiredFreq = globalConfig.actFreq[ (int)globalConfig.actBand ];
@@ -438,15 +456,15 @@ void loop(void)
                 curRotate = globalConfig.scrRotate; // newRotate;
                 tft.setRotation(curRotate);
                 Serial.print("rotate"); Serial.println(curRotate, DEC); 
-                dispFreq = desiredFrequency;
+                dispFreq = desiredFreq;
                 scr_need_up = 1;
             }
             else
 #endif
-            if (dispFreq != desiredFrequency)
+            if (dispFreq != desiredFreq)
             {
-            Serial.print("freq"); Serial.println(desiredFrequency, DEC); 
-            dispFreq = desiredFrequency;
+            Serial.print("freq"); Serial.println(desiredFreq, DEC); 
+            dispFreq = desiredFreq;
 #if 1
             if (0 == scr_need_up)
             {
@@ -508,7 +526,7 @@ void myText(int line)
       tft.setTextSize(SECOND_LINE_SIZE);              
       tft.setTextColor(SECOND_LINE_COLOR);
       tft.print( (curRotate & 1) ? SECND_LINE_LONG : SECND_LINE_SHORT);
-      if (BAND_FM == globalConfig.band) {
+      if (MODE_FM == globalConfig.bands[(int)globalConfig.actBand].mode) {
         UINT Mhz, Khz = (dispFreq / 10) % 10;
         Mhz = dispFreq / 100;
         tft.print(Mhz);

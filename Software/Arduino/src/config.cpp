@@ -48,6 +48,9 @@ void load_config(void)
     char * cfg, ch;
     UINT i;
 
+    Serial.print( "Config size " );
+    Serial.println( sizeof(CONFIG) );
+
     // read everything we expect from the flash
     cfg = (char *) & globalConfig;
     for (i=0; i < sizeof(CONFIG); i++) {
@@ -71,16 +74,15 @@ void load_config(void)
             valid = false;
             Serial.println( "Config fails band." );
         }
-    if (false == valid) {
-        memcpy( & globalConfig, & default_config, sizeof(CONFIG));
-        save_config();
-    }
-    else if (sizeof(CONFIG) > globalConfig.cfgSize) {
-        UINT first_feature_off = offsetof(CONFIG , featureEn[0]);
+    if (sizeof(CONFIG) > globalConfig.cfgSize) {
+     // UINT first_feature_off = offsetof(CONFIG , featureEn[0]);
         Serial.print( "Config has grown from " );
         Serial.print( globalConfig.cfgSize );
         Serial.print( " to " );
         Serial.println( sizeof(CONFIG) );
+# if 1
+            valid = false;
+# else
         if (globalConfig.cfgSize > (first_feature_off + (FEATURE_DISPLAY * sizeof(CHAR)))) {
             int num_features_read = (globalConfig.cfgSize - first_feature_off) / sizeof(CHAR);
             do {
@@ -88,6 +90,11 @@ void load_config(void)
                 num_features_read ++;
             } while (NUM_FEATURES > num_features_read);
         }
+# endif
+    }
+    if (false == valid) {
+        memcpy( & globalConfig, & default_config, sizeof(CONFIG));
+        save_config();
     }
 # endif
 #else

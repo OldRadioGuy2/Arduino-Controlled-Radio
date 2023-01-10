@@ -58,7 +58,7 @@ int my_mode(char * str, int * inp)
           } else 
           if ((ch == 's') || (ch == 'S'))
           {
-               mode = MODE_FM;
+               mode = MODE_SSB;
                valid_chars ++;
           } else 
           if ((ch == 'm') || (ch == 'M') ||
@@ -152,6 +152,8 @@ const char * set_freq(char * cmd)
         if (MODE_FM == mode)
              freq *= 10;
         globalConfig.actFreq[ band ] = freq;
+        write_config( ((char *) & globalConfig.actFreq[ band ]) - globalConfig.version,
+                                  sizeof(globalConfig.actFreq[0]));
      return goodRet;
     }
     return bad_Ret;
@@ -172,10 +174,11 @@ const char * set_band(char * cmd)
          mode = globalConfig.bands[band].mode;
 
          if ((1 <= dbg_verbose) || (0 != BLE_command)) {
-               Serial.print(" Set band");
+               Serial.print(" Set band ");
                Serial.print( band );
                Serial.println( modeStrings[ mode ]);
           }
+        write_config( ((char *) & globalConfig.actBand) - globalConfig.version, sizeof(globalConfig.actBand));
         return goodRet;
     } 
     Serial.print("Set band ignored.");
@@ -194,6 +197,7 @@ const char * set_volume(char * cmd)
      }
     if (MAX_VOLUME >= volume) {
         globalConfig.actVolume = volume;
+        write_config( ((char *) & globalConfig.actVolume) - globalConfig.version, sizeof(globalConfig.actVolume));
         return goodRet;
     }
     return bad_Ret;
@@ -270,14 +274,17 @@ const char * create_band(char * cmd)
     Serial.print( fMax );
     Serial.print( " bw " );
     Serial.println( obw );
-    if ((0 <= band) && (NUM_BANDS > band)) {
-        BAND_CFG * bandCfg = & globalConfig.bands[band];
+    if ((0 < band) && (NUM_BANDS >= band)) {
+        BAND_CFG * bandCfg;
+        band --;
+        bandCfg = & globalConfig.bands[band];
         bandCfg->mode = mode;
         bandCfg->bw = obw;
         bandCfg->minFreq = fMin;
         bandCfg->maxFreq = fMax;
         if (band == globalConfig.actBand)
             forceBand = 1;
+        write_config( (char *) bandCfg - globalConfig.version, sizeof(BAND_CFG));
         return goodRet;
      }
      return bad_Ret;
@@ -294,6 +301,7 @@ const char * delete_band(char * cmd)
         bandCfg->mode = MODE_NOT_VALID;
         if (band == globalConfig.actBand)
             forceBand = 1;
+        write_config( (char *) bandCfg - globalConfig.version, sizeof(BAND_CFG));
         return goodRet;
     }
     return bad_Ret;
