@@ -63,4 +63,4 @@ extern SI4735 rx;
 
 extern CHAR forceBand;
 extern CHAR BLE_command;
-
+extern BOOL mode_is_valid;

@@ -154,6 +154,8 @@ const char * set_freq(char * cmd)
         globalConfig.actFreq[ band ] = freq;
         write_config( ((char *) & globalConfig.actFreq[ band ]) - globalConfig.version,
                                   sizeof(globalConfig.actFreq[0]));
+        if ((MODE_NOT_VALID != mode) && (false == mode_is_valid))
+          forceBand = 1;
      return goodRet;
     }
     return bad_Ret;

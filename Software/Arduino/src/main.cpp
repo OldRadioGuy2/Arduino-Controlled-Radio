@@ -184,6 +184,7 @@ const char * process_cmd_line(char is_ble)
 }
 
 CHAR forceBand = 0;
+BOOL mode_is_valid = false;
 
 #if BUILD_GUI_LIB
  UINT  dispFreq = 999;
@@ -209,7 +210,6 @@ void loop(void)
     CHAR curBand = NUM_BANDS;
     UCHAR curVol = 255;
     UINT currentFrequency = 0;
-    BOOL mode_is_valid = false;
 #endif
     load_config();
 
