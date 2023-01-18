@@ -170,14 +170,17 @@ const char * set_band(char * cmd)
     int cmdStart = 2;
     int band = my_atoi(cmd, & cmdStart);
     int mode;
-    if ((0 < band) && (NUM_BANDS >= band)) {
+    if ((BAND_ONES_OFFSET <= band) &&
+        ((NUM_BANDS + BAND_ONES_OFFSET) > band)) {
+# if BAND_ONES_OFFSET
          band --;
+# endif
          globalConfig.actBand = band;
          mode = globalConfig.bands[band].mode;
 
          if ((1 <= dbg_verbose) || (0 != BLE_command)) {
                Serial.print(" Set band ");
-               Serial.print( band );
+               Serial.print( band + BAND_ONES_OFFSET);
                Serial.println( modeStrings[ mode ]);
           }
         write_config( ((char *) & globalConfig.actBand) - globalConfig.version, sizeof(globalConfig.actBand));
@@ -243,6 +246,9 @@ const char * get_band(char * cmd)
      int band = globalConfig.actBand;
      int mode = globalConfig.bands[band].mode;
 
+# if BAND_ONES_OFFSET
+     band ++;
+# endif
      Serial.print( " Band ");
      Serial.println( band );
      Serial.println( modeStrings[ mode ]);
@@ -266,7 +272,7 @@ const char * create_band(char * cmd)
     int fMin = my_atoi(cmd, & cmdStart);
     int fMax = my_atoi(cmd, & cmdStart);
     int obw  = my_atoi(cmd, & cmdStart);
-
+#if 0
     Serial.print( " Create Band " );
     Serial.print( band );
     Serial.print( modeStrings[ mode ]);
@@ -276,9 +282,13 @@ const char * create_band(char * cmd)
     Serial.print( fMax );
     Serial.print( " bw " );
     Serial.println( obw );
-    if ((0 < band) && (NUM_BANDS >= band)) {
+#endif
+    if ((BAND_ONES_OFFSET <= band) &&
+        ((NUM_BANDS + BAND_ONES_OFFSET) > band)) { 
         BAND_CFG * bandCfg;
-        band --;
+# if BAND_ONES_OFFSET
+         band --;
+# endif
         bandCfg = & globalConfig.bands[band];
         bandCfg->mode = mode;
         bandCfg->bw = obw;
@@ -298,8 +308,13 @@ const char * delete_band(char * cmd)
     int band = my_atoi(cmd, & cmdStart);
     Serial.print( " Delete Band " );
     Serial.println( band );
-    if ((0 <= band) && (NUM_BANDS > band)) {
-        BAND_CFG * bandCfg = & globalConfig.bands[band];
+    if ((BAND_ONES_OFFSET <= band) &&
+        ((NUM_BANDS + BAND_ONES_OFFSET) > band)) {
+        BAND_CFG * bandCfg;
+# if BAND_ONES_OFFSET
+         band --;
+# endif
+        bandCfg = & globalConfig.bands[band];
         bandCfg->mode = MODE_NOT_VALID;
         if (band == globalConfig.actBand)
             forceBand = 1;

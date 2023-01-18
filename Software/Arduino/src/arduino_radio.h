@@ -33,6 +33,8 @@ enum sel_features {
 
 #define NUM_BANDS 5
 
+#define BAND_ONES_OFFSET 1
+
 typedef struct {
     UCHAR mode;
     UCHAR bw;

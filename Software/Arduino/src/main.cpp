@@ -244,19 +244,27 @@ void loop(void)
 #if BUILD_RADIO && 1
      curBand = 0;
      do {
-        int mode;
         BAND_CFG * bandCfg = & globalConfig.bands[(int)curBand];
-        Serial.print("Band");   Serial.print(curBand, DEC);
-        Serial.print(" from "); Serial.print(bandCfg->minFreq);
-        Serial.print(" to ");   Serial.print(bandCfg->maxFreq);
-        mode = bandCfg->mode;
+        int mode = bandCfg->mode;
+        UINT min, max;
         if (NUM_MODES <= mode)
             mode = MODE_NOT_VALID;
-        // Serial.print(" ");
+        min = bandCfg->minFreq;
+        max = bandCfg->maxFreq;
+        currentFrequency = globalConfig.actFreq[(int)curBand];
+        if (MODE_FM == mode) {
+            min /= 10; max /= 10;
+            currentFrequency /= 10;
+        }
+        Serial.print("Band");   Serial.print(curBand + BAND_ONES_OFFSET, DEC);
         Serial.print(modeStrings[ mode ]);
+        Serial.print(" from "); Serial.print(min);
+        Serial.print(" to ");   Serial.print(max);
+        Serial.print(" cur ");  Serial.print(currentFrequency);
         Serial.print(" bw ");   Serial.println(bandCfg->bw); 
         curBand ++;
      } while (curBand < NUM_BANDS);
+    Serial.print("Setting band ");   Serial.println(globalConfig.actBand + BAND_ONES_OFFSET, DEC);
 #endif
 
     do {
@@ -317,7 +325,9 @@ void loop(void)
             do  {
                 if (5 < flip_count)
                 {
-                    Serial.print( " failed" );
+                    Serial.print( " failed at " );
+                    Serial.print( currentFrequency );
+                    mode_is_valid = false;
                     break;
                 }
                 if (currentFrequency < desiredFreq)
