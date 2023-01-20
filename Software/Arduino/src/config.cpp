@@ -19,20 +19,19 @@ CONFIG globalConfig;
 static const CONFIG default_config {
     "VER-001",
     sizeof(CONFIG),
-    {  10070, 1030, 0, 0 },
     0,             // first band
-    MAX_VOLUME / 3,
+    (MAX_VOLUME * 2) / 3,
     DEFAULT_ROTATE,
     {
         0,
         0,
         0,
-        0 == USE_EEPROM
+        0 // == USE_EEPROM
     },
+    {  10070, 1030, 0 },
     {
         { MODE_FM, 0, 8400, 10800 },
         { MODE_AM, 0,  520,  1750 },
-        { MODE_NOT_VALID, 0, 0, 0 },
         { MODE_NOT_VALID, 0, 0, 0 }
     }
 };
@@ -45,8 +44,9 @@ void save_config(void)
 void load_config(void)
 {
 #if USE_EEPROM
-    char * cfg, ch;
+    char * cfg;
     UINT i;
+    BOOL valid = true;
 
     Serial.print( "Config size " );
     Serial.println( sizeof(CONFIG) );
@@ -54,13 +54,12 @@ void load_config(void)
     // read everything we expect from the flash
     cfg = (char *) & globalConfig;
     for (i=0; i < sizeof(CONFIG); i++) {
-        ch = EEPROM.read( STARTING_LOCATION + i);
+        char ch = EEPROM.read( STARTING_LOCATION + i);
         * cfg = ch;
         cfg ++;
     }
 
 # if 1
-    BOOL valid = true;
     // Is configuration valid?
     for (i=0; i < SIZE_OF_CONFIG_VERS; i++) {
         if (globalConfig.version[i] != default_config.version[i] ) {
@@ -69,33 +68,27 @@ void load_config(void)
             break;
         }
     }
-    if (// (globalConfig.actBand < 0) ||
-        (globalConfig.actBand >= NUM_BANDS)) {
+#  if 0
+ /* if (0 > globalConfig.actBand) || */ 
+    if (NUM_BANDS <= globalConfig.actBand) {
             valid = false;
             Serial.println( "Config fails band." );
-        }
-    if (sizeof(CONFIG) > globalConfig.cfgSize) {
-     // UINT first_feature_off = offsetof(CONFIG , featureEn[0]);
-        Serial.print( "Config has grown from " );
+    }
+#  endif
+    if (sizeof(CONFIG) != globalConfig.cfgSize) {
+        Serial.print( "Config has changed from " );
         Serial.print( globalConfig.cfgSize );
         Serial.print( " to " );
         Serial.println( sizeof(CONFIG) );
-# if 1
-            valid = false;
-# else
-        if (globalConfig.cfgSize > (first_feature_off + (FEATURE_DISPLAY * sizeof(CHAR)))) {
-            int num_features_read = (globalConfig.cfgSize - first_feature_off) / sizeof(CHAR);
-            do {
-                globalConfig.featureEn[num_features_read] = default_config.featureEn[num_features_read];
-                num_features_read ++;
-            } while (NUM_FEATURES > num_features_read);
-        }
-# endif
+        valid = false;
     }
+
     if (false == valid) {
         memcpy( & globalConfig, & default_config, sizeof(CONFIG));
         save_config();
     }
+# else
+   // memcpy( & globalConfig, & default_config, sizeof(CONFIG));
 # endif
 #else
     memcpy( & globalConfig, & default_config, sizeof(CONFIG));

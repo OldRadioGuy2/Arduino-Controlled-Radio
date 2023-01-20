@@ -31,7 +31,7 @@ enum sel_features {
 // Configuration memory
 #define SIZE_OF_CONFIG_VERS 8
 
-#define NUM_BANDS 5
+#define NUM_BANDS    3
 
 #define BAND_ONES_OFFSET 1
 
@@ -43,13 +43,13 @@ typedef struct {
 } BAND_CFG;
 
 typedef struct {
-    char version[SIZE_OF_CONFIG_VERS];
-    UINT cfgSize;
-    UINT actFreq[NUM_BANDS];
-    CHAR actBand;
-   UCHAR actVolume;
-   UCHAR scrRotate;
-    CHAR featureEn[NUM_FEATURES];
+    char  version[SIZE_OF_CONFIG_VERS];
+    UCHAR cfgSize;
+    UCHAR actBand;
+    UCHAR actVolume;
+    UCHAR scrRotate;
+    CHAR  featureEn[NUM_FEATURES];
+    UINT   actFreq[NUM_BANDS];
     BAND_CFG bands[NUM_BANDS];
 } CONFIG;
 

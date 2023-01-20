@@ -152,6 +152,7 @@ void print_help(void)
 }
 
 CHAR BLE_command = 0;
+CHAR cur_Mode = MODE_NOT_VALID;
 
 const char * process_cmd_line(char is_ble)
 {
@@ -244,27 +245,27 @@ void loop(void)
 #if BUILD_RADIO && 1
      curBand = 0;
      do {
-        BAND_CFG * bandCfg = & globalConfig.bands[(int)curBand];
-        int mode = bandCfg->mode;
         UINT min, max;
-        if (NUM_MODES <= mode)
-            mode = MODE_NOT_VALID;
+        BAND_CFG * bandCfg = & globalConfig.bands[(int)curBand];
+        cur_Mode = bandCfg->mode;
+        if (NUM_MODES <= cur_Mode)
+            cur_Mode = MODE_NOT_VALID;
         min = bandCfg->minFreq;
         max = bandCfg->maxFreq;
         currentFrequency = globalConfig.actFreq[(int)curBand];
-        if (MODE_FM == mode) {
+        if (MODE_FM == cur_Mode) {
             min /= 10; max /= 10;
             currentFrequency /= 10;
         }
         Serial.print("Band");   Serial.print(curBand + BAND_ONES_OFFSET, DEC);
-        Serial.print(modeStrings[ mode ]);
+        Serial.print(modeStrings[ (int)cur_Mode ]);
         Serial.print(" from "); Serial.print(min);
         Serial.print(" to ");   Serial.print(max);
         Serial.print(" cur ");  Serial.print(currentFrequency);
         Serial.print(" bw ");   Serial.println(bandCfg->bw); 
         curBand ++;
      } while (curBand < NUM_BANDS);
-    Serial.print("Setting band ");   Serial.println(globalConfig.actBand + BAND_ONES_OFFSET, DEC);
+    Serial.print("Active band ");   Serial.println(globalConfig.actBand + BAND_ONES_OFFSET, DEC);
 #endif
 
     do {
@@ -282,7 +283,8 @@ void loop(void)
             bandCfg = & globalConfig.bands[(int)curBand];
 
             mode_is_valid = false;
-            switch (bandCfg->mode) {
+            cur_Mode = bandCfg->mode;
+            switch (cur_Mode) {
                 case MODE_AM:
                     Serial.print( "Setting AM " );
                     rx.setAM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 10);
@@ -309,11 +311,11 @@ void loop(void)
                     Serial.print( "Mode not valid " );
                     break;
             }
-            Serial.println( desiredFreq );
+            Serial.println( (MODE_FM == cur_Mode) ? (desiredFreq / 10) : desiredFreq );
             forceBand = 0;
             delay(500);
-            currentFrequency = desiredFreq;
-        } else        
+      //    currentFrequency = desiredFreq;
+        } else
             currentFrequency = rx.getFrequency();
         if ((currentFrequency != desiredFreq) &&
             (mode_is_valid == true))
@@ -321,11 +323,11 @@ void loop(void)
             char cur_dir = 2, flip_count = 0;
 
             Serial.print( "Tuning to " );
-            Serial.print( desiredFreq );
+            Serial.print( (MODE_FM == cur_Mode) ? (desiredFreq / 10) : desiredFreq );
             do  {
                 if (5 < flip_count)
                 {
-                    Serial.print( " failed at " );
+                    Serial.print( " - failed at " );
                     Serial.print( currentFrequency );
                     mode_is_valid = false;
                     break;
@@ -540,7 +542,7 @@ void myText(int line)
       tft.setTextSize(SECOND_LINE_SIZE);              
       tft.setTextColor(SECOND_LINE_COLOR);
       tft.print( (curRotate & 1) ? SECND_LINE_LONG : SECND_LINE_SHORT);
-      if (MODE_FM == globalConfig.bands[(int)globalConfig.actBand].mode) {
+      if (MODE_FM == cur_Mode) {
         UINT Mhz, Khz = (dispFreq / 10) % 10;
         Mhz = dispFreq / 100;
         tft.print(Mhz);
