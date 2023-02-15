@@ -76,24 +76,24 @@ void setup(void)
   pinMode( pulseInPin, INPUT);      // pulse input
   digitalWrite(triggerPin, HIGH);
   
-  Serial.println("Arduino Controlled Radio.");
+  Serial.println(F("Arduino Controlled Radio."));
 #if BUILD_GUI_LIB
   tft.begin();
 #endif
 #if SOFT_SERIAL
-    BLE_Serial.println("Hello");
+    BLE_Serial.println(F("Hello"));
 #endif
 #if BUILD_RADIO
 // Look for the Si47XX I2C bus address
   rx.setI2CStandardMode();
   int16_t si4735Addr = rx.getDeviceI2CAddress(RESET_PIN);
   if ( si4735Addr == 0 ) {
-    Serial.println("Si473X not found!");
+    Serial.println(F("Si473X not found!"));
     Serial.flush();
     while (1);
   } 
 
-    Serial.print("The Si473X I2C address is 0x");
+    Serial.print(F("The Si473X I2C address is 0x"));
     Serial.println(si4735Addr, HEX);
     rx.setup(RESET_PIN, 0); // FM_FUNCTION);
     // rx.setup(RESET_PIN, -1, 1, SI473X_ANALOG_AUDIO);
@@ -214,32 +214,32 @@ void loop(void)
 #endif
     load_config();
 
-    Serial.print("Read Frequency Cap: ");
+    Serial.print(F("Read Frequency Cap: "));
     Serial.println( (globalConfig.featureEn[FEATURE_FREQ_CAP]) ? szOn : szOff);
-    Serial.print("Read Analog Volume: ");
+    Serial.print(F("Read Analog Volume: "));
     Serial.println( (globalConfig.featureEn[FEATURE_VOLUME]) ? szOn : szOff);
-    Serial.print("Read Band Switch: ");
+    Serial.print(F("Read Band Switch: "));
     Serial.println( (globalConfig.featureEn[FEATURE_BAND_SW]) ? szOn : szOff);
-    Serial.print("Write Display: ");
+    Serial.print(F("Write Display: "));
     Serial.println( (globalConfig.featureEn[FEATURE_DISPLAY]) ? szOn : szOff);
 
     print_help();
 
 #if BUILD_GUI_LIB
     chRd = tft.readcommand8(ILI9341_RDMODE);
-    Serial.print("DisplayPwrMd: 0x"); Serial.println(chRd, HEX);
+    Serial.print(F("DisplayPwrMd: 0x")); Serial.println(chRd, HEX);
 
     chRd = tft.readcommand8(ILI9341_RDMADCTL);
-    Serial.print(" MADCTL Mode: 0x"); Serial.println(chRd, HEX);
+    Serial.print(F(" MADCTL Mode: 0x")); Serial.println(chRd, HEX);
 
     chRd = tft.readcommand8(ILI9341_RDPIXFMT);
-    Serial.print("Pixel Format: 0x"); Serial.println(chRd, HEX);
+    Serial.print(F("Pixel Format: 0x")); Serial.println(chRd, HEX);
 
     chRd = tft.readcommand8(ILI9341_RDIMGFMT);
-    Serial.print("Image Format: 0x"); Serial.println(chRd, HEX);
+    Serial.print(F("Image Format: 0x")); Serial.println(chRd, HEX);
 
     chRd = tft.readcommand8(ILI9341_RDSELFDIAG);
-    Serial.print("  Self Diag : 0x"); Serial.println(chRd, HEX); 
+    Serial.print(F("  Self Diag : 0x")); Serial.println(chRd, HEX); 
 #endif
 
 #if BUILD_RADIO && 1
@@ -257,15 +257,15 @@ void loop(void)
             min /= 10; max /= 10;
             currentFrequency /= 10;
         }
-        Serial.print("Band");   Serial.print(curBand + BAND_ONES_OFFSET, DEC);
+        Serial.print(F("Band"));   Serial.print(curBand + BAND_ONES_OFFSET, DEC);
         Serial.print(modeStrings[ (int)cur_Mode ]);
-        Serial.print(" from "); Serial.print(min);
-        Serial.print(" to ");   Serial.print(max);
-        Serial.print(" cur ");  Serial.print(currentFrequency);
-        Serial.print(" bw ");   Serial.println(bandCfg->bw); 
+        Serial.print(F(" from ")); Serial.print(min);
+        Serial.print(F(" to "));   Serial.print(max);
+        Serial.print(F(" cur "));  Serial.print(currentFrequency);
+        Serial.print(F(" bw "));   Serial.println(bandCfg->bw); 
         curBand ++;
      } while (curBand < NUM_BANDS);
-    Serial.print("Active band ");   Serial.println(globalConfig.actBand + BAND_ONES_OFFSET, DEC);
+    Serial.print(F("Active band "));   Serial.println(globalConfig.actBand + BAND_ONES_OFFSET, DEC);
 #endif
 
     do {
@@ -280,40 +280,42 @@ void loop(void)
             BAND_CFG * bandCfg;
 
             curBand = globalConfig.actBand;
-            bandCfg = & globalConfig.bands[(int)curBand];
-
             mode_is_valid = false;
-            cur_Mode = bandCfg->mode;
-            switch (cur_Mode) {
-                case MODE_AM:
-                    Serial.print( "Setting AM " );
-                    rx.setAM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 10);
-                    rx.setSeekAmLimits(bandCfg->minFreq, bandCfg->maxFreq);
-                    rx.setSeekAmSpacing(10); // spacing 10kHz
-                    goto mode_good;
-                case MODE_FM:
-                    Serial.print( "Setting FM " );
-                    rx.setFM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 20);
-                    rx.setSeekFmSpacing(2);
-                    goto mode_good;
-                case MODE_SSB:
-                    Serial.print( "Setting SSB " );
-                    rx.setAM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 5);
-                    rx.setSeekAmLimits(bandCfg->minFreq, bandCfg->maxFreq);   // Range for seeking.
-                    rx.setSeekAmSpacing(1); // spacing 1kHz
-                mode_good:
-                    if ((bandCfg->minFreq <= desiredFreq) &&
-                        (bandCfg->maxFreq >= desiredFreq))
-                        mode_is_valid = true;
-                    break;
-                case MODE_NOT_VALID:
-                default:
-                    Serial.print( "Mode not valid " );
-                    break;
+            if (NUM_BANDS > globalConfig.actBand) {
+                bandCfg = & globalConfig.bands[(int)curBand];
+
+                cur_Mode = bandCfg->mode;
+                switch (cur_Mode) {
+                    case MODE_AM:
+                        Serial.print( F("Setting AM ") );
+                        rx.setAM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 10);
+                        rx.setSeekAmLimits(bandCfg->minFreq, bandCfg->maxFreq);
+                        rx.setSeekAmSpacing(10); // spacing 10kHz
+                        goto mode_good;
+                    case MODE_FM:
+                        Serial.print( F("Setting FM ") );
+                        rx.setFM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 20);
+                        rx.setSeekFmSpacing(2);
+                        goto mode_good;
+                    case MODE_SSB:
+                        Serial.print( F("Setting SSB ") );
+                        rx.setAM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 5);
+                        rx.setSeekAmLimits(bandCfg->minFreq, bandCfg->maxFreq);   // Range for seeking.
+                        rx.setSeekAmSpacing(1); // spacing 1kHz
+                    mode_good:
+                        if ((bandCfg->minFreq <= desiredFreq) &&
+                            (bandCfg->maxFreq >= desiredFreq))
+                            mode_is_valid = true;
+                        break;
+                    case MODE_NOT_VALID:
+                    default:
+                        Serial.print( F("Mode not valid ") );
+                        break;
+                }
+                Serial.println( (MODE_FM == cur_Mode) ? (desiredFreq / 10) : desiredFreq );
+                delay(500);
             }
-            Serial.println( (MODE_FM == cur_Mode) ? (desiredFreq / 10) : desiredFreq );
             forceBand = 0;
-            delay(500);
       //    currentFrequency = desiredFreq;
         } else
             currentFrequency = rx.getFrequency();
@@ -322,12 +324,12 @@ void loop(void)
         {
             char cur_dir = 2, flip_count = 0;
 
-            Serial.print( "Tuning to " );
+            Serial.print( F("Tuning to ") );
             Serial.print( (MODE_FM == cur_Mode) ? (desiredFreq / 10) : desiredFreq );
             do  {
                 if (5 < flip_count)
                 {
-                    Serial.print( " - failed at " );
+                    Serial.print( F(" - failed at ") );
                     Serial.print( currentFrequency );
                     mode_is_valid = false;
                     break;
@@ -352,7 +354,7 @@ void loop(void)
         if (curVol != globalConfig.actVolume)
         {
             rx.setVolume(curVol = globalConfig.actVolume);
-            Serial.print("Setting volume ");
+            Serial.print(F("Setting volume "));
             Serial.println(curVol);
         }
 #endif
@@ -368,10 +370,10 @@ void loop(void)
                 const char * resStr;
                 ble_cmd_buffer[ble_cmd_in] = '\0';
                 resStr = process_cmd_line(1);
-                BLE_Serial.print("{");
+                BLE_Serial.print(F("{"));
                 BLE_Serial.write( resStr );
                 BLE_Serial.write( fmt_rsp_buffer );
-                BLE_Serial.print("}\n\r");
+                BLE_Serial.print(F("}\n\r"));
                 ble_cmd_in = 0;
             } else
             if ( // ('\n' != key) && (0x1B != key) &&
@@ -436,7 +438,7 @@ void loop(void)
 #endif
             if (globalConfig.actBand != newBand)
             {
-                Serial.print("Band Sw now");
+                Serial.print(F("Band Sw now"));
                 Serial.println(modeStrings[ (int)newBand]);
                 globalConfig.actBand = newBand;
             }
@@ -445,7 +447,7 @@ void loop(void)
          * change frequency based on a digital or analog input */
         if (globalConfig.featureEn[FEATURE_FREQ_CAP]) {
             // Get Frequency
-            Serial.println("insert Cap read here.");
+            Serial.println(F("insert Cap read here."));
         }
         /* Feature 2:
          * change volume based on an analog input */
@@ -454,7 +456,7 @@ void loop(void)
             static int lastVolume = -1;
             int pinA0 = analogRead(analogVolumePin);
             if (((pinA0 - lastVolume) > 4) || ((lastVolume - pinA0) > 4)) {
-                Serial.print("Analog volume ");
+                Serial.print(F("Analog volume "));
                 Serial.println(pinA0);
                 lastVolume = pinA0;
             }
@@ -471,7 +473,7 @@ void loop(void)
             {
                 curRotate = globalConfig.scrRotate; // newRotate;
                 tft.setRotation(curRotate);
-                Serial.print("rotate"); Serial.println(curRotate, DEC); 
+                Serial.print("rotate "); Serial.println(curRotate, DEC); 
                 dispFreq = desiredFreq;
                 scr_need_up = 1;
             }
@@ -479,24 +481,24 @@ void loop(void)
 #endif
             if (dispFreq != desiredFreq)
             {
-            Serial.print("freq"); Serial.println(desiredFreq, DEC); 
-            dispFreq = desiredFreq;
-#if 1
-            if (0 == scr_need_up)
-            {
-              int adjust_y = FIRST_LINE_SIZE * 8 * 2;
-              if (0 == (curRotate & 1)) 
-                 adjust_y += FIRST_LINE_SIZE * 8;
-          //  tft.fill(BACKGROUND_COLOR);
-              tft.rect(0, adjust_y, 
-                        tft.Adafruit_SPITFT::width(),
-                        SECOND_LINE_SIZE * 8);
-              tft.setCursor(0, adjust_y);
-              myText(2);  // re-draw second line
-            } else
+                Serial.print(F("freq")); Serial.println(desiredFreq, DEC); 
+                dispFreq = desiredFreq;
+#if 0
+                if (0 == scr_need_up)
+                {
+                int adjust_y = FIRST_LINE_SIZE * 8 * 2;
+                if (0 == (curRotate & 1)) 
+                    adjust_y += FIRST_LINE_SIZE * 8;
+            //  tft.fill(BACKGROUND_COLOR);
+                tft.rect(0, adjust_y, 
+                            tft.Adafruit_SPITFT::width(),
+                            SECOND_LINE_SIZE * 8);
+                tft.setCursor(0, adjust_y);
+                myText(2);  // re-draw second line
+                } else
 #endif
-            if (2 != scr_need_up)
-                scr_need_up ++;
+                if (2 != scr_need_up)
+                    scr_need_up ++;
             }
 
             if (0 != scr_need_up) {
