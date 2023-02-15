@@ -129,9 +129,9 @@ unsigned int measure_Cap_timing(void)
 
    /* dicharge the capacitor  */
       Serial.print( res);       // print the value to serial port
-      Serial.print(" counts, ");      // print units and carriage return
+      Serial.print(F(" counts, "));      // print units and carriage return
       Serial.print( (end - start) >> 2);       // print the value to serial port
-      Serial.println(" u-sec.");      // print units and carriage return
+      Serial.println(F(" u-sec."));      // print units and carriage return
 
     return (unsigned int)res;
 }
@@ -145,7 +145,7 @@ const char * set_freq(char * cmd)
     int freq = my_atoi(cmd, & cmdStart);
 
     if ((1 <= dbg_verbose) || (0 != BLE_command)) {
-          Serial.print(" Set Frequency ");
+          Serial.print(F(" Set Frequency "));
           Serial.println(freq);
      }
     if (0 != freq) {
@@ -179,14 +179,14 @@ const char * set_band(char * cmd)
          mode = globalConfig.bands[band].mode;
 
          if ((1 <= dbg_verbose) || (0 != BLE_command)) {
-               Serial.print(" Set band ");
+               Serial.print(F(" Set band "));
                Serial.print( band + BAND_ONES_OFFSET);
                Serial.println( modeStrings[ mode ]);
           }
         write_config( ((char *) & globalConfig.actBand) - globalConfig.version, sizeof(globalConfig.actBand));
         return goodRet;
     } 
-    Serial.print("Set band ignored.");
+    Serial.print(F("Set band ignored."));
     return bad_Ret;
 }
 
@@ -197,7 +197,7 @@ const char * set_volume(char * cmd)
     int volume = my_atoi(cmd, & cmdStart);
 
     if ((1 <= dbg_verbose) || (0 != BLE_command)) {
-          Serial.print(" Set volume ");
+          Serial.print(F(" Set volume "));
           Serial.println(volume);
      }
     if (MAX_VOLUME >= volume) {
@@ -215,11 +215,12 @@ const char * get_freq(char * cmd)
      UINT currentFrequency;
 
 #if BUILD_RADIO
-     Serial.print(" The Si473X frequency is ");
+     Serial.print(F(" The Si473X frequency is "));
      currentFrequency = rx.getFrequency();
 #else
-     currentFrequency = globalConfig.frequency[ band ];
+     currentFrequency = globalConfig.actFreq[ band ];
 #endif
+     sprintf_1(currentFrequency);
      if (MODE_FM == mode) {
           UINT kiloHz = currentFrequency % 100;
           currentFrequency = currentFrequency / 100;
@@ -230,14 +231,13 @@ const char * get_freq(char * cmd)
      } else
           Serial.print(currentFrequency);
      Serial.println( modeStrings[ mode ]);
-     sprintf_1(currentFrequency);
 
      return val_Ret;
 }
 
 const char * get_sig_lvl(char * cmd)
 {
-          Serial.println( " Sig Level not imp." );
+          Serial.println( F(" Sig Level not imp.") );
           return bad_Ret;
 }
 
@@ -249,7 +249,7 @@ const char * get_band(char * cmd)
 # if BAND_ONES_OFFSET
      band ++;
 # endif
-     Serial.print( " Band ");
+     Serial.print( F(" Band "));
      Serial.println( band );
      Serial.println( modeStrings[ mode ]);
      sprintf_1(band);
@@ -258,7 +258,7 @@ const char * get_band(char * cmd)
 
 const char * get_volume(char * cmd)
 {
-     Serial.print( " Volume ");
+     Serial.print( F(" Volume "));
      Serial.println( globalConfig.actVolume );
      sprintf_1( globalConfig.actVolume);
      return val_Ret;
@@ -273,14 +273,14 @@ const char * create_band(char * cmd)
     int fMax = my_atoi(cmd, & cmdStart);
     int obw  = my_atoi(cmd, & cmdStart);
 #if 0
-    Serial.print( " Create Band " );
+    Serial.print( F(" Create Band ") );
     Serial.print( band );
     Serial.print( modeStrings[ mode ]);
-    Serial.print( " min " );
+    Serial.print( F(" min ") );
     Serial.print( fMin );
-    Serial.print( " max " );
+    Serial.print( F(" max ") );
     Serial.print( fMax );
-    Serial.print( " bw " );
+    Serial.print( F(" bw ") );
     Serial.println( obw );
 #endif
     if ((BAND_ONES_OFFSET <= band) &&
@@ -306,7 +306,7 @@ const char * delete_band(char * cmd)
 {
     int cmdStart = 2;
     int band = my_atoi(cmd, & cmdStart);
-    Serial.print( " Delete Band " );
+    Serial.print( F(" Delete Band ") );
     Serial.println( band );
     if ((BAND_ONES_OFFSET <= band) &&
         ((NUM_BANDS + BAND_ONES_OFFSET) > band)) {
@@ -326,13 +326,13 @@ const char * delete_band(char * cmd)
 
 const char * calibrate_tuner(char * cmd)
 {
-          Serial.println( " Cal Tunernot imp." );
+          Serial.println( F(" Cal Tuner not imp.") );
           return bad_Ret;
 }
 
 const char * calibrate_band(char * cmd)
 {
-          Serial.println( " Cal Band not imp." );
+          Serial.println( F(" Cal Band not imp.") );
           return bad_Ret;
 }
 
@@ -341,7 +341,7 @@ const char * volume_feature(char * cmd)
     int cmdStart = 2;
     int featEn = my_atoi(cmd, & cmdStart);
     if ((0 == featEn) || (1 == featEn)) {
-          Serial.print(" Enable volume ");
+          Serial.print(F(" Enable volume "));
           Serial.println(featEn);
           globalConfig.featureEn[FEATURE_VOLUME] = featEn;
      }
@@ -353,7 +353,7 @@ const char * tuning_feature(char * cmd)
     int cmdStart = 2;
     int featEn = my_atoi(cmd, & cmdStart);
     if ((0 == featEn) || (1 == featEn)) {
-          Serial.print(" Enable tuning ");
+          Serial.print(F(" Enable tuning "));
           Serial.println(featEn);
           globalConfig.featureEn[FEATURE_FREQ_CAP] = featEn;
      }
@@ -365,7 +365,7 @@ const char * band_sw_feature(char * cmd)
     int cmdStart = 2;
     int featEn = my_atoi(cmd, & cmdStart);
     if ((0 == featEn) || (1 == featEn)) {
-          Serial.print(" Enable Band switch ");
+          Serial.print(F(" Enable Band sw "));
           Serial.println(featEn);
           globalConfig.featureEn[FEATURE_BAND_SW] = featEn;
      }
@@ -377,7 +377,7 @@ const char * display_feature(char * cmd)
     int cmdStart = 2;
     int featEn = my_atoi(cmd, & cmdStart);
     if ((0 == featEn) || (1 == featEn)) {
-          Serial.print(" Enable display ");
+          Serial.print(F(" Enable display "));
           Serial.println(featEn);
           globalConfig.featureEn[FEATURE_DISPLAY] = featEn;
      }
@@ -386,7 +386,7 @@ const char * display_feature(char * cmd)
 
 const char * save_cfg(char * cmd)
 {
-    Serial.println( " Save config.");
+    Serial.println( F(" Save config."));
     save_config();
     return goodRet;
 }
@@ -395,7 +395,7 @@ const char * screen_rotate(char * cmd)
 {
     int cmdStart = 2;
     int rote = my_atoi(cmd, & cmdStart);
-    Serial.print(" Rotate ");
+    Serial.print(F(" Rotate "));
     Serial.println(rote);
     if ((0 < rote) && (4 >= rote)) {
         globalConfig.scrRotate = rote -1;

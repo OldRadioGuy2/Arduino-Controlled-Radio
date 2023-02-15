@@ -48,7 +48,7 @@ void load_config(void)
     UINT i;
     BOOL valid = true;
 
-    Serial.print( "Config size " );
+    Serial.print( F("Config size ") );
     Serial.println( sizeof(CONFIG) );
 
     // read everything we expect from the flash
@@ -64,7 +64,7 @@ void load_config(void)
     for (i=0; i < SIZE_OF_CONFIG_VERS; i++) {
         if (globalConfig.version[i] != default_config.version[i] ) {
             valid = false;
-            Serial.println( "Config fails version." );
+            Serial.println( F("Config fails version.") );
             break;
         }
     }
@@ -72,13 +72,13 @@ void load_config(void)
  /* if (0 > globalConfig.actBand) || */ 
     if (NUM_BANDS <= globalConfig.actBand) {
             valid = false;
-            Serial.println( "Config fails band." );
+            Serial.println( F("Config fails band.") );
     }
 #  endif
     if (sizeof(CONFIG) != globalConfig.cfgSize) {
-        Serial.print( "Config has changed from " );
+        Serial.print( F("Config has changed from ") );
         Serial.print( globalConfig.cfgSize );
-        Serial.print( " to " );
+        Serial.print( F(" to ") );
         Serial.println( sizeof(CONFIG) );
         valid = false;
     }

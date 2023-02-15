@@ -14,7 +14,7 @@
 #endif
 
 #ifdef BUILD_APPLICATION
-# define BUILD_GUI_LIB  0
+# define BUILD_GUI_LIB  1
 #endif
 
 #ifdef BUILD_TEST_PROGRAM
