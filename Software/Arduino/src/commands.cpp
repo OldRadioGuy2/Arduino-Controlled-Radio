@@ -237,8 +237,13 @@ const char * get_freq(char * cmd)
 
 const char * get_sig_lvl(char * cmd)
 {
-          Serial.println( F(" Sig Level not imp.") );
-          return bad_Ret;
+     uint8_t sigStr = rx.getReceivedSignalStrengthIndicator();
+     Serial.print( F(" Sig strength ") );
+     Serial.println( sigStr );
+     Serial.print( F(" SNR ") );
+     Serial.println( rx.getStatusSNR() );
+     sprintf_1(sigStr);
+     return val_Ret;
 }
 
 const char * get_band(char * cmd)
