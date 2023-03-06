@@ -19,21 +19,23 @@ CONFIG globalConfig;
 static const CONFIG default_config {
     "VER-001",
     sizeof(CONFIG),
-    0,             // first band
+    0,              // first band
     (MAX_VOLUME * 2) / 3,
-    DEFAULT_ROTATE,
-    {
+    0,              // number of positions in the band switch must be calibrated 
+    {               // featureEn[]
         0,
         0,
         0,
         0 // == USE_EEPROM
     },
-    {  10070, 1030, 0 },
-    {
+    {  10070, 1030, 0 },    // actFreq[]
+    {               // bands[]
         { MODE_FM, 0, 8400, 10800 },
         { MODE_AM, 0,  520,  1750 },
         { MODE_NOT_VALID, 0, 0, 0 }
-    }
+    },
+    { 85, 255, 426, 597, 768 }, // tunerCal[5]
+    { 0, MAX_ANALOG_VALUE -1 } // bndSwCal[]
 };
 
 void save_config(void)

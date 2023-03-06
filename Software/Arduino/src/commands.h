@@ -11,7 +11,6 @@ Software Controlled Radio - Command Definitions
 
 #define analogVolumePin      0
 #define analogBandSwitch     1
-#define MAX_ANALOG_VALUE    (1 << 10)
 
 #define BLE_TxPin      11 
 #define BLE_RxPin      12
@@ -41,9 +40,6 @@ processor_t tuning_feature;
 processor_t band_sw_feature;
 processor_t display_feature;
 processor_t save_cfg;
-#if BUILD_GUI_LIB
-processor_t screen_rotate;
-#endif
 processor_t create_band;
 processor_t delete_band;
 processor_t calibrate_tuner;

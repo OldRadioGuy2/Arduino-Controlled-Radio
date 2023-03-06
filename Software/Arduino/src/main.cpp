@@ -128,9 +128,6 @@ const command command_list []= {
     {"DB", & delete_band }, // 
     {"CT", & calibrate_tuner }, // 
     {"CB", & calibrate_band }, // 
-#if BUILD_GUI_LIB
-    {"RO", &  screen_rotate },
-#endif
     {"CP", & read_Cap }     // read the analog Cap
 };
 const char szOn[] = "On";
@@ -139,16 +136,16 @@ const char szOff[] = "Off";
 void print_help(void)
 {
     unsigned int i = 0;
-    Serial.write( "Commands are : " );
+    Serial.print( F("Commands are : ") );
     do
     {
         Serial.write( command_list[i].cmd );
         i ++;
         if ( i >= sizeof(command_list) / sizeof(command))
             break;
-        Serial.write( ", " );
+        Serial.print( F(", ") );
     } while (1);
-    Serial.write( "\n" );
+    Serial.print( F("\n") );
 }
 
 CHAR BLE_command = 0;
@@ -219,9 +216,17 @@ void loop(void)
     Serial.print(F("Read Analog Volume: "));
     Serial.println( (globalConfig.featureEn[FEATURE_VOLUME]) ? szOn : szOff);
     Serial.print(F("Read Band Switch: "));
-    Serial.println( (globalConfig.featureEn[FEATURE_BAND_SW]) ? szOn : szOff);
+    if (globalConfig.featureEn[FEATURE_BAND_SW]) {
+        Serial.print( globalConfig.numBandCfg +1 );
+        Serial.println( F(" bands.") );
+    } else
+        Serial.println( szOff );
     Serial.print(F("Write Display: "));
-    Serial.println( (globalConfig.featureEn[FEATURE_DISPLAY]) ? szOn : szOff);
+    if (globalConfig.featureEn[FEATURE_DISPLAY]) {
+        Serial.print( F("rotate") );
+        Serial.println( globalConfig.featureEn[FEATURE_DISPLAY] );
+    } else
+        Serial.println( szOff );
 
     print_help();
 
@@ -250,22 +255,25 @@ void loop(void)
         cur_Mode = bandCfg->mode;
         if (NUM_MODES <= cur_Mode)
             cur_Mode = MODE_NOT_VALID;
-        min = bandCfg->minFreq;
-        max = bandCfg->maxFreq;
-        currentFrequency = globalConfig.actFreq[(int)curBand];
-        if (MODE_FM == cur_Mode) {
-            min /= 10; max /= 10;
-            currentFrequency /= 10;
+        if (cur_Mode != MODE_NOT_VALID) {
+            min = bandCfg->minFreq;
+            max = bandCfg->maxFreq;
+            currentFrequency = globalConfig.actFreq[(int)curBand];
+            if (MODE_FM == cur_Mode) {
+                min /= 10; max /= 10;
+                currentFrequency /= 10;
+            }
+            Serial.print(F("Band"));   Serial.print(curBand + BAND_ONES_OFFSET, DEC);
+            Serial.print(modeStrings[ (int)cur_Mode ]);
+            Serial.print(F(" from ")); Serial.print(min);
+            Serial.print(F(" to "));   Serial.print(max);
+            Serial.print(F(" cur "));  Serial.print(currentFrequency);
+            Serial.print(F(" bw "));   Serial.println(bandCfg->bw); 
         }
-        Serial.print(F("Band"));   Serial.print(curBand + BAND_ONES_OFFSET, DEC);
-        Serial.print(modeStrings[ (int)cur_Mode ]);
-        Serial.print(F(" from ")); Serial.print(min);
-        Serial.print(F(" to "));   Serial.print(max);
-        Serial.print(F(" cur "));  Serial.print(currentFrequency);
-        Serial.print(F(" bw "));   Serial.println(bandCfg->bw); 
         curBand ++;
      } while (curBand < NUM_BANDS);
-    Serial.print(F("Active band "));   Serial.println(globalConfig.actBand + BAND_ONES_OFFSET, DEC);
+    Serial.print(F("Active band "));   Serial.print(globalConfig.actBand + BAND_ONES_OFFSET, DEC);
+    Serial.print(F(" out of "));   Serial.println(NUM_BANDS, DEC);
 #endif
 
     do {
@@ -281,7 +289,7 @@ void loop(void)
 
             curBand = globalConfig.actBand;
             mode_is_valid = false;
-            if (NUM_BANDS > globalConfig.actBand) {
+            if (NUM_BANDS > curBand) {
                 bandCfg = & globalConfig.bands[(int)curBand];
 
                 cur_Mode = bandCfg->mode;
@@ -420,34 +428,53 @@ void loop(void)
         /* Feature 3:
          * change AM/FM Band based on a digital or analog input */
         if (globalConfig.featureEn[FEATURE_BAND_SW]) {
-            int pinA1;  // get_band_switch()
+            A2D_VAL pinA1;  // get_band_switch()
             char newBand;
-#if 1
+#if 0
             pinMode(digitalBandSwitch, INPUT);
             pinA1 = digitalRead(digitalBandSwitch);
             if (pinA1)
-                newBand = 0;
+                newBand = 2;
             else
                 newBand = 1;
 #else
             pinA1 = analogRead(analogBandSwitch);
-            if (pinA1 > (MAX_ANALOG_VALUE / 2))
-                newBand = BAND_FM;
-            else
-                newBand = BAND_AM;
+            newBand = 0;
+            while (pinA1 > globalConfig.bndSwCal[(int)newBand]) {
+                newBand ++;
+                if (globalConfig.numBandCfg <= newBand)
+                    break;
+            }
 #endif
             if (globalConfig.actBand != newBand)
             {
-                Serial.print(F("Band Sw now"));
-                Serial.println(modeStrings[ (int)newBand]);
+                Serial.print(F("Band Sw now "));
+                Serial.println((int)newBand);
+                if (0 < newBand)
+                    newBand --;
                 globalConfig.actBand = newBand;
             }
         }
         /* Feature 1:
          * change frequency based on a digital or analog input */
-        if (globalConfig.featureEn[FEATURE_FREQ_CAP]) {
-            // Get Frequency
-            Serial.println(F("insert Cap read here."));
+        if ((globalConfig.featureEn[FEATURE_FREQ_CAP]) &&
+            (NUM_BANDS > curBand)) {      // Get cap, calc Frequency
+            BAND_CFG * bandCfg = & globalConfig.bands[(int)curBand];
+            CAP_RD_VAL diff, tuner = measure_Cap_timing( false );
+
+            currentFrequency = bandCfg->maxFreq - bandCfg->minFreq;
+            if ( globalConfig.tunerCal[1] > globalConfig.tunerCal[0]) {
+                diff = globalConfig.tunerCal[1] - globalConfig.tunerCal[0];
+                if (tuner > globalConfig.tunerCal[0])
+                    tuner -= globalConfig.tunerCal[0];
+                currentFrequency = bandCfg->minFreq + ((currentFrequency * tuner) / diff);
+            } else {
+                diff = globalConfig.tunerCal[0] - globalConfig.tunerCal[1];
+                if (tuner > globalConfig.tunerCal[1])
+                    tuner -= globalConfig.tunerCal[1];
+                currentFrequency = bandCfg->maxFreq - ((currentFrequency * tuner) / diff);
+            }
+            globalConfig.actFreq[(int)curBand] = currentFrequency;
         }
         /* Feature 2:
          * change volume based on an analog input */
@@ -468,12 +495,12 @@ void loop(void)
         if (globalConfig.featureEn[FEATURE_DISPLAY]) {
             // update the display
 # if 1
-            if ((curRotate != globalConfig.scrRotate) &&
+            if ((curRotate != globalConfig.featureEn[FEATURE_DISPLAY]) &&
                 (0 == scr_need_up))
             {
-                curRotate = globalConfig.scrRotate; // newRotate;
-                tft.setRotation(curRotate);
-                Serial.print("rotate "); Serial.println(curRotate, DEC); 
+                curRotate = globalConfig.featureEn[FEATURE_DISPLAY]; // newRotate;
+                tft.setRotation(ADA_LIB_ROTATE(curRotate));
+                Serial.print(F("rotate ")); Serial.println(curRotate, DEC); 
                 dispFreq = desiredFreq;
                 scr_need_up = 1;
             }
@@ -483,11 +510,11 @@ void loop(void)
             {
                 Serial.print(F("freq")); Serial.println(desiredFreq, DEC); 
                 dispFreq = desiredFreq;
-#if 0
+#if 1
                 if (0 == scr_need_up)
                 {
                 int adjust_y = FIRST_LINE_SIZE * 8 * 2;
-                if (0 == (curRotate & 1)) 
+                if (PORTRAIT_ROTATE(curRotate)) 
                     adjust_y += FIRST_LINE_SIZE * 8;
             //  tft.fill(BACKGROUND_COLOR);
                 tft.rect(0, adjust_y, 
@@ -510,9 +537,9 @@ void loop(void)
                 {
                 scr_line = 0;
         # if 1
-                if (curRotate != globalConfig.scrRotate) {
-                    curRotate = globalConfig.scrRotate;
-                tft.setRotation(curRotate);
+                if (curRotate != globalConfig.featureEn[FEATURE_DISPLAY]) {
+                    curRotate = globalConfig.featureEn[FEATURE_DISPLAY];
+                    tft.setRotation(ADA_LIB_ROTATE(curRotate));
                 }
         # endif
                 scr_need_up --;
@@ -543,13 +570,13 @@ void myText(int line)
     case 2:
       tft.setTextSize(SECOND_LINE_SIZE);              
       tft.setTextColor(SECOND_LINE_COLOR);
-      tft.print( (curRotate & 1) ? SECND_LINE_LONG : SECND_LINE_SHORT);
+      tft.print( LANDSCAPE_ROTATE(curRotate) ? SECND_LINE_LONG : SECND_LINE_SHORT);
       if (MODE_FM == cur_Mode) {
         UINT Mhz, Khz = (dispFreq / 10) % 10;
         Mhz = dispFreq / 100;
         tft.print(Mhz);
         tft.print('.');
-        if ((100 <= Mhz))   // && (0 == (curRotate & 1)))
+        if ((100 <= Mhz))   // && (PORTRAIT_ROTATE(curRotate)))
             tft.print(Khz);
         else
             tft.println(Khz);
@@ -563,9 +590,9 @@ void myText(int line)
       tft.setTextSize(THIRD_LINE_SIZE);  tft.print(THIRD_LINE_TEXT);
       break;
     case 4:
-      if (0 == (curRotate & 1))  tft.println();
+      if (PORTRAIT_ROTATE(curRotate))  tft.println();
       tft.setTextSize(FOURTH_LINE_SIZE);  tft.println(FOURTH_LINE_TEXT);
-      // if (0 != (curRotate & 1))  tft.println();
+      // if (PORTRAIT_ROTATE(curRotate))  tft.println();
       tft.setTextSize(DEBUG_TEXT_SIZE);
       break;
   }
@@ -585,7 +612,7 @@ int dbgText(int line)
     } while (32 > j);
     buildLine[j] = '\0';
   tft.println(buildLine);
-  if (curRotate & 1)
+  if LANDSCAPE_ROTATE(curRotate)
    return (line >= (12 -1));
  return (line >= (16 -1));
 }

@@ -105,7 +105,7 @@ void sprintf_2(int val1, int val2)
      my_sprintf(& fmt_rsp_buffer[fst + 1], val2);
 }
 
-unsigned int measure_Cap_timing(void)
+CAP_RD_VAL measure_Cap_timing(int verbose)
 {
   unsigned long start, end, res;
 
@@ -128,12 +128,13 @@ unsigned int measure_Cap_timing(void)
  //  interrupts();
 
    /* dicharge the capacitor  */
+   if (verbose) {
       Serial.print( res);       // print the value to serial port
       Serial.print(F(" counts, "));      // print units and carriage return
       Serial.print( (end - start) >> 2);       // print the value to serial port
       Serial.println(F(" u-sec."));      // print units and carriage return
-
-    return (unsigned int)res;
+   }
+    return (CAP_RD_VAL)res;
 }
 
 // Absolute frequecy, FM is in 10's of killihertz
@@ -238,7 +239,7 @@ const char * get_freq(char * cmd)
 const char * get_sig_lvl(char * cmd)
 {
      uint8_t sigStr = rx.getReceivedSignalStrengthIndicator();
-     Serial.print( F(" Sig strength ") );
+      Serial.print( F(" Sig strength ") );
      Serial.println( sigStr );
      Serial.print( F(" SNR ") );
      Serial.println( rx.getStatusSNR() );
@@ -329,16 +330,56 @@ const char * delete_band(char * cmd)
     return bad_Ret;
 }
 
+/*  */
 const char * calibrate_tuner(char * cmd)
 {
-          Serial.println( F(" Cal Tuner not imp.") );
-          return bad_Ret;
+    int cmdStart = 2;
+    UCHAR tuneIndex = my_atoi(cmd, & cmdStart);
+    if (NUM_TUNE_CONFIG > tuneIndex) {
+          CAP_RD_VAL tuner = measure_Cap_timing( true );
+          globalConfig.tunerCal[tuneIndex] = tuner;
+
+    if ((NUM_TUNE_CONFIG -1) == tuneIndex)
+          write_config( (char *) & globalConfig.tunerCal[0] - globalConfig.version,
+                              sizeof(globalConfig.tunerCal));
+    }
 }
+
+/* save off the intermediate values */
+UCHAR last_band_index = 0;        // CBn, 1- based
+A2D_VAL last_band_value = 0;
 
 const char * calibrate_band(char * cmd)
 {
-          Serial.println( F(" Cal Band not imp.") );
-          return bad_Ret;
+    int cmdStart = 2;
+    UCHAR bIndex = my_atoi(cmd, & cmdStart);
+    if (0 == bIndex) {
+          globalConfig.numBandCfg = last_band_index;
+          write_config( (char *) & globalConfig.numBandCfg - globalConfig.version,
+                              sizeof(globalConfig.numBandCfg));
+          write_config( (char *) globalConfig.bndSwCal[0] - globalConfig.version,
+                              sizeof(globalConfig.bndSwCal));
+          last_band_index = 0;        // CBn, 1- based
+          last_band_value = 0;
+    } else if (NUM_BANDS >= bIndex) {
+          A2D_VAL bandPin = analogRead(analogBandSwitch);
+
+          Serial.print( F(" Cal Band ") );
+          Serial.print( bIndex );
+          Serial.print( F(" read ") );
+          Serial.println( bandPin );
+
+          if ((last_band_index + 1) == bIndex) {
+               // for (1 == bIndex) case, we have insured 
+               // both last_band_index = 0 and last_band_value = 0
+               globalConfig.bndSwCal[last_band_index] = (bandPin + last_band_value) / 2;
+          } else {
+              Serial.println( F("out of order.") );
+          }
+          last_band_index = bIndex;
+          last_band_value = bandPin;
+    }
+    return bad_Ret;
 }
 
 const char * volume_feature(char * cmd)
@@ -369,7 +410,7 @@ const char * band_sw_feature(char * cmd)
 {
     int cmdStart = 2;
     int featEn = my_atoi(cmd, & cmdStart);
-    if ((0 == featEn) || (1 == featEn)) {
+    if ((0 <= featEn) && (NUM_BAND_CONFIG >= featEn)) {
           Serial.print(F(" Enable Band sw "));
           Serial.println(featEn);
           globalConfig.featureEn[FEATURE_BAND_SW] = featEn;
@@ -381,8 +422,8 @@ const char * display_feature(char * cmd)
 {
     int cmdStart = 2;
     int featEn = my_atoi(cmd, & cmdStart);
-    if ((0 == featEn) || (1 == featEn)) {
-          Serial.print(F(" Enable display "));
+    if ((0 <= featEn) && (4 >= featEn)) {
+          Serial.print(F(" En/rotate display "));
           Serial.println(featEn);
           globalConfig.featureEn[FEATURE_DISPLAY] = featEn;
      }
@@ -396,6 +437,8 @@ const char * save_cfg(char * cmd)
     return goodRet;
 }
 
+#if 0
+// obsolete, replaced by display_feature()
 const char * screen_rotate(char * cmd)
 {
     int cmdStart = 2;
@@ -403,15 +446,15 @@ const char * screen_rotate(char * cmd)
     Serial.print(F(" Rotate "));
     Serial.println(rote);
     if ((0 < rote) && (4 >= rote)) {
-        globalConfig.scrRotate = rote -1;
+        globalConfig.scrRotate = rote;
     }
     return goodRet;
 }
-
+#endif
 const char * read_Cap(char * cmd)
 {
     // unsigned int res = 
-    measure_Cap_timing();
+    measure_Cap_timing( true );
 
     return goodRet;
 }
