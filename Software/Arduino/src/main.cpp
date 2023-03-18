@@ -182,6 +182,7 @@ const char * process_cmd_line(char is_ble)
 }
 
 CHAR forceBand = 0;
+BOOL prev_mode_valid = false;
 BOOL mode_is_valid = false;
 
 #if BUILD_GUI_LIB
@@ -288,6 +289,7 @@ void loop(void)
             BAND_CFG * bandCfg;
 
             curBand = globalConfig.actBand;
+            prev_mode_valid = mode_is_valid;
             mode_is_valid = false;
             if (NUM_BANDS > curBand) {
                 bandCfg = & globalConfig.bands[(int)curBand];
@@ -312,12 +314,18 @@ void loop(void)
                         rx.setSeekAmSpacing(1); // spacing 1kHz
                     mode_good:
                         if ((bandCfg->minFreq <= desiredFreq) &&
-                            (bandCfg->maxFreq >= desiredFreq))
+                            (bandCfg->maxFreq >= desiredFreq)) {
                             mode_is_valid = true;
+                            curVol = 0;         // force a volume update when mode is valid
+                        }
                         break;
                     case MODE_NOT_VALID:
                     default:
                         Serial.print( F("Mode not valid ") );
+                        if (prev_mode_valid) {
+                            rx.setVolume(0);
+                            Serial.println(F("Set vol 0"));
+                        }
                         break;
                 }
                 Serial.println( (MODE_FM == cur_Mode) ? (desiredFreq / 10) : desiredFreq );
