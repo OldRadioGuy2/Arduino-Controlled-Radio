@@ -200,8 +200,8 @@ void loop(void)
 #if SOFT_SERIAL
     int ble_cmd_in = 0; // start with empty buffer
 #endif
-#if BUILD_GUI_LIB
     uint8_t chRd;
+#if BUILD_GUI_LIB
     uint8_t scr_line = 0;
     uint8_t scr_need_up = 0;
 #endif
@@ -214,8 +214,16 @@ void loop(void)
 
     Serial.print(F("Read Frequency Cap: "));
     Serial.println( (globalConfig.featureEn[FEATURE_FREQ_CAP]) ? szOn : szOff);
+    chRd = globalConfig.featureEn[FEATURE_VOLUME];
     Serial.print(F("Read Analog Volume: "));
-    Serial.println( (globalConfig.featureEn[FEATURE_VOLUME]) ? szOn : szOff);
+        if (3 == chRd)
+        Serial.println(F("rev-log."));
+    else if (2 == chRd)
+        Serial.println(F("log-scale."));
+    else if (1 == chRd)
+        Serial.println(F("linear."));
+    else
+        Serial.println(szOff);
     Serial.print(F("Read Band Switch: "));
     if (globalConfig.featureEn[FEATURE_BAND_SW]) {
         Serial.print( globalConfig.numBandCfg +1 );
@@ -223,9 +231,10 @@ void loop(void)
     } else
         Serial.println( szOff );
     Serial.print(F("Write Display: "));
-    if (globalConfig.featureEn[FEATURE_DISPLAY]) {
+    chRd = globalConfig.featureEn[FEATURE_DISPLAY];
+    if (chRd) {
         Serial.print( F("rotate") );
-        Serial.println( globalConfig.featureEn[FEATURE_DISPLAY] );
+        Serial.println( chRd );
     } else
         Serial.println( szOff );
 
@@ -317,14 +326,17 @@ void loop(void)
                             (bandCfg->maxFreq >= desiredFreq)) {
                             mode_is_valid = true;
                             curVol = 0;         // force a volume update when mode is valid
+                            break;
                         }
-                        break;
+                        Serial.print( F("Freq not valid ") );
+                        goto freq_not_valid;
                     case MODE_NOT_VALID:
                     default:
                         Serial.print( F("Mode not valid ") );
+                    freq_not_valid:
                         if (prev_mode_valid) {
                             rx.setVolume(0);
-                            Serial.println(F("Set vol 0"));
+                            Serial.println(F("- set vol 0"));
                         }
                         break;
                 }
@@ -488,14 +500,33 @@ void loop(void)
          * change volume based on an analog input */
         if (globalConfig.featureEn[FEATURE_VOLUME]) {
             // Get Volume
-            static int lastVolume = -1;
             int pinA0 = analogRead(analogVolumePin);
-            if (((pinA0 - lastVolume) > 4) || ((lastVolume - pinA0) > 4)) {
-                Serial.print(F("Analog volume "));
-                Serial.println(pinA0);
-                lastVolume = pinA0;
+            UCHAR newVol;
+
+            switch (globalConfig.featureEn[FEATURE_VOLUME]) {
+                case 3:         // opposite log scale
+                    pinA0 = (MAX_ANALOG_VALUE - pinA0);
+                case 6:         // opposite log scale upside down
+                    newVol = MAX_VOLUME - pot_log_scale(pinA0);
+                    break;
+
+                case 5:         // log scale upside down
+                    pinA0 = (MAX_ANALOG_VALUE - pinA0);
+                case 2:         // log scale
+                    newVol = pot_log_scale(pinA0);
+                    break;
+
+                case 4:         // linear upside down
+                    pinA0 = (MAX_ANALOG_VALUE - pinA0);
+                case 1:         // linear
+                    newVol = (pinA0 * MAX_VOLUME) / (MAX_ANALOG_VALUE -1);
+                    break;
             }
-            globalConfig.actVolume = (pinA0 * MAX_VOLUME) / (MAX_ANALOG_VALUE -1);
+            if (((globalConfig.actVolume - newVol) > 4) || ((newVol - globalConfig.actVolume) > 4)) {
+                Serial.print(F("New volume "));
+                Serial.println(newVol);
+            }
+            globalConfig.actVolume = newVol;
         }
         /* Feature 4:
          * update a display for output */

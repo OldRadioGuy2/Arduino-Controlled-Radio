@@ -85,6 +85,8 @@ void write_config(UCHAR offset, UCHAR size);    // Save some of the Config to EE
 void save_config(void);     // Save the entire Config to EEPROM
 CAP_RD_VAL measure_Cap_timing(int verbose);
 
+UCHAR pot_log_scale(A2D_VAL volIn);  // potentiometer
+
 extern const char * const modeStrings[NUM_MODES];
 
 extern CONFIG globalConfig;

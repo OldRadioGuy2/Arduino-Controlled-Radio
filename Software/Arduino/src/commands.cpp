@@ -398,7 +398,7 @@ const char * volume_feature(char * cmd)
 {
     int cmdStart = 2;
     int featEn = my_atoi(cmd, & cmdStart);
-    if ((0 == featEn) || (1 == featEn)) {
+    if ((0 <= featEn) && (6 >= featEn)) {
           Serial.print(F(" Enable volume "));
           Serial.println(featEn);
           globalConfig.featureEn[FEATURE_VOLUME] = featEn;

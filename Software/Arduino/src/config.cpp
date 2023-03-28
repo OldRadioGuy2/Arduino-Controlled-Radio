@@ -11,6 +11,26 @@
 #endif
 #include "display.h"
 
+#define NUM_LOG_STEPS   8
+#define SIZE_LOG_STEP   (MAX_ANALOG_VALUE / NUM_LOG_STEPS)
+
+static const UCHAR log_offset[NUM_LOG_STEPS] =
+    { 0, 32, 48, 56, 60, 62, 63, MAX_VOLUME };
+
+UCHAR pot_log_scale(A2D_VAL volIn)
+{
+    int div, mod;
+    UCHAR powTwo, baseOff;
+
+    div = volIn / SIZE_LOG_STEP;
+    mod = volIn % SIZE_LOG_STEP;
+
+    powTwo =  2 + div;
+    baseOff = log_offset[div];
+
+    return (baseOff + (mod >> powTwo));
+}  // potentiometer
+
 /* Where in the EEPROM space do we start */
 #define STARTING_LOCATION 0
 
