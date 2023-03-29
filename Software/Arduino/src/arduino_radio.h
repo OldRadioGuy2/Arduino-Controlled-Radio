@@ -16,10 +16,13 @@ typedef unsigned int FREQ_VAL;
  * 10 bit A to D, tuning cap is a long */
 typedef unsigned int A2D_VAL;
 typedef unsigned int CAP_RD_VAL;
-#define MAX_ANALOG_VALUE    (1 << 10)
+#define MAX_ANALOG_VALUE    ((1 << 10) -1)
 
 /* radio library accepts volume in 0-63*/
 #define MAX_VOLUME  63
+
+#define NUM_BW_DEF_AM  7
+#define NUM_BW_DEF_FM  5
 
 enum band_selections {
     MODE_NOT_VALID,
@@ -86,8 +89,12 @@ void save_config(void);     // Save the entire Config to EEPROM
 CAP_RD_VAL measure_Cap_timing(int verbose);
 
 UCHAR pot_log_scale(A2D_VAL volIn);  // potentiometer
+FREQ_VAL roundToBandwidth(FREQ_VAL freqIn);
 
 extern const char * const modeStrings[NUM_MODES];
+extern const char * const strBandwidthAM[NUM_BW_DEF_AM];
+extern const FREQ_VAL bandwidthAM[NUM_BW_DEF_AM];
+extern const FREQ_VAL bandwidthFM[NUM_BW_DEF_FM];
 
 extern CONFIG globalConfig;
 

@@ -36,6 +36,19 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_R
 
 #if BUILD_RADIO
 # define RESET_PIN 2
+
+const char * const strBandwidthAM[NUM_BW_DEF_AM] = {
+    "6",  "4", "3", "2", "1", "1.8", "2.5"
+};
+
+const FREQ_VAL bandwidthAM[NUM_BW_DEF_AM] = {
+    6,  4,  3,  2,  1,  1, 1
+};
+
+const FREQ_VAL bandwidthFM[NUM_BW_DEF_FM] = {
+    0, 110, 84, 60, 40
+};
+
 /* single global instance of the Radio control library class */
 SI4735 rx;
 #endif
@@ -238,8 +251,6 @@ void loop(void)
     } else
         Serial.println( szOff );
 
-    print_help();
-
 #if BUILD_GUI_LIB
     chRd = tft.readcommand8(ILI9341_RDMODE);
     Serial.print(F("DisplayPwrMd: 0x")); Serial.println(chRd, HEX);
@@ -278,13 +289,19 @@ void loop(void)
             Serial.print(F(" from ")); Serial.print(min);
             Serial.print(F(" to "));   Serial.print(max);
             Serial.print(F(" cur "));  Serial.print(currentFrequency);
-            Serial.print(F(" bw "));   Serial.println(bandCfg->bw); 
+            Serial.print(F(" bw ")); 
+            if (MODE_FM == cur_Mode) {
+                if (0 == bandCfg->bw) 
+                    Serial.println(F("Auto")); 
+                 else Serial.println( bandwidthFM[bandCfg->bw]);
+            } else Serial.println(strBandwidthAM[bandCfg->bw]);
         }
         curBand ++;
      } while (curBand < NUM_BANDS);
     Serial.print(F("Active band "));   Serial.print(globalConfig.actBand + BAND_ONES_OFFSET, DEC);
     Serial.print(F(" out of "));   Serial.println(NUM_BANDS, DEC);
 #endif
+    print_help();
 
     do {
 #if BUILD_RADIO || BUILD_GUI_LIB
@@ -308,6 +325,7 @@ void loop(void)
                     case MODE_AM:
                         Serial.print( F("Setting AM ") );
                         rx.setAM(bandCfg->minFreq, bandCfg->maxFreq, desiredFreq, 10);
+                        rx.setBandwidth(bandCfg->bw, 1);
                         rx.setSeekAmLimits(bandCfg->minFreq, bandCfg->maxFreq);
                         rx.setSeekAmSpacing(10); // spacing 10kHz
                         goto mode_good;
@@ -449,23 +467,13 @@ void loop(void)
          * change AM/FM Band based on a digital or analog input */
         if (globalConfig.featureEn[FEATURE_BAND_SW]) {
             A2D_VAL pinA1;  // get_band_switch()
-            char newBand;
-#if 0
-            pinMode(digitalBandSwitch, INPUT);
-            pinA1 = digitalRead(digitalBandSwitch);
-            if (pinA1)
-                newBand = 2;
-            else
-                newBand = 1;
-#else
+            char newBand = 0;
             pinA1 = analogRead(analogBandSwitch);
-            newBand = 0;
             while (pinA1 > globalConfig.bndSwCal[(int)newBand]) {
                 newBand ++;
                 if (globalConfig.numBandCfg <= newBand)
                     break;
             }
-#endif
             if (globalConfig.actBand != newBand)
             {
                 Serial.print(F("Band Sw now "));
@@ -494,7 +502,7 @@ void loop(void)
                     tuner -= globalConfig.tunerCal[1];
                 currentFrequency = bandCfg->maxFreq - ((currentFrequency * tuner) / diff);
             }
-            globalConfig.actFreq[(int)curBand] = currentFrequency;
+            globalConfig.actFreq[(int)curBand] = roundToBandwidth(currentFrequency);
         }
         /* Feature 2:
          * change volume based on an analog input */
@@ -519,10 +527,11 @@ void loop(void)
                 case 4:         // linear upside down
                     pinA0 = (MAX_ANALOG_VALUE - pinA0);
                 case 1:         // linear
-                    newVol = (pinA0 * MAX_VOLUME) / (MAX_ANALOG_VALUE -1);
+                    newVol = (pinA0 * MAX_VOLUME) / (MAX_ANALOG_VALUE);
                     break;
             }
-            if (((globalConfig.actVolume - newVol) > 4) || ((newVol - globalConfig.actVolume) > 4)) {
+            if (((globalConfig.actVolume > newVol) && ((globalConfig.actVolume - newVol) > 4)) ||
+                ((newVol > globalConfig.actVolume) && ((newVol - globalConfig.actVolume) > 4))) {
                 Serial.print(F("New volume "));
                 Serial.println(newVol);
             }

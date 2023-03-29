@@ -140,19 +140,21 @@ CAP_RD_VAL measure_Cap_timing(int verbose)
 // Absolute frequecy, FM is in 10's of killihertz
 const char * set_freq(char * cmd)
 {
+    FREQ_VAL freqIn, freqOut;
     int cmdStart = 2;
     int band = globalConfig.actBand;
     int mode = globalConfig.bands[band].mode;
-    int freq = my_atoi(cmd, & cmdStart);
+    freqIn = my_atoi(cmd, & cmdStart);
 
-    if ((1 <= dbg_verbose) || (0 != BLE_command)) {
-          Serial.print(F(" Set Frequency "));
-          Serial.println(freq);
-     }
-    if (0 != freq) {
+    if (0 != freqIn) {
         if (MODE_FM == mode)
-             freq *= 10;
-        globalConfig.actFreq[ band ] = freq;
+             freqIn *= 10;
+        freqOut = roundToBandwidth(freqIn);
+          if ((1 <= dbg_verbose) || (0 != BLE_command)) {
+                    Serial.print(F(" Set Frequency "));
+                    Serial.println(freqOut);
+               }
+        globalConfig.actFreq[ band ] = freqOut;
         write_config( ((char *) & globalConfig.actFreq[ band ]) - globalConfig.version,
                                   sizeof(globalConfig.actFreq[0]));
         if ((MODE_NOT_VALID != mode) && (false == mode_is_valid))
@@ -239,10 +241,16 @@ const char * get_freq(char * cmd)
 const char * get_sig_lvl(char * cmd)
 {
      uint8_t sigStr = rx.getReceivedSignalStrengthIndicator();
-      Serial.print( F(" Sig strength ") );
+     Serial.print( F(" Sig strength ") );
      Serial.println( sigStr );
+
      Serial.print( F(" SNR ") );
      Serial.println( rx.getStatusSNR() );
+
+     Serial.print( F("Signal: ") );
+     Serial.print(rx.getCurrentRSSI());
+     Serial.println(F("dBuV"));
+
      sprintf_1(sigStr);
      return val_Ret;
 }

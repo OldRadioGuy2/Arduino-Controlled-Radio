@@ -12,7 +12,7 @@
 #include "display.h"
 
 #define NUM_LOG_STEPS   8
-#define SIZE_LOG_STEP   (MAX_ANALOG_VALUE / NUM_LOG_STEPS)
+#define SIZE_LOG_STEP   ((MAX_ANALOG_VALUE + 1) / NUM_LOG_STEPS)
 
 static const UCHAR log_offset[NUM_LOG_STEPS] =
     { 0, 32, 48, 56, 60, 62, 63, MAX_VOLUME };
@@ -30,6 +30,36 @@ UCHAR pot_log_scale(A2D_VAL volIn)
 
     return (baseOff + (mod >> powTwo));
 }  // potentiometer
+
+FREQ_VAL roundToBandwidth(FREQ_VAL freqIn)
+{
+    BAND_CFG * bandCfg;
+    FREQ_VAL result, minFre, spacing, diff;
+    int curBand = globalConfig.actBand;
+
+    bandCfg = & globalConfig.bands[curBand];
+    result = freqIn;
+    minFre = bandCfg->minFreq;
+    if (MODE_FM == bandCfg->mode) {
+        spacing = 200;      // commerical FM is 200 KHz spacing
+        if ((0 < bandCfg->bw) && (NUM_BW_DEF_FM > bandCfg->bw))
+            spacing = bandwidthFM[bandCfg->bw];
+        result *= 10;
+        minFre *= 10;
+    } else {
+        spacing = 1;        // assume 1 KHz spacing
+        if ((0 < bandCfg->bw) && (NUM_BW_DEF_AM > bandCfg->bw))
+            spacing = bandwidthAM[bandCfg->bw];
+    }
+    diff = result - minFre;
+    diff = (diff + (spacing / 2)) / spacing;
+    result = minFre + (diff * spacing);
+    if (MODE_FM == bandCfg->mode) {
+        result += spacing / 2;
+        result = result / 10;
+    }
+    return result;
+}
 
 /* Where in the EEPROM space do we start */
 #define STARTING_LOCATION 0
@@ -55,7 +85,7 @@ static const CONFIG default_config {
         { MODE_NOT_VALID, 0, 0, 0 }
     },
     { 85, 255, 426, 597, 768 }, // tunerCal[5]
-    { 0, MAX_ANALOG_VALUE -1 } // bndSwCal[]
+    { 0, MAX_ANALOG_VALUE } // bndSwCal[]
 };
 
 void save_config(void)
