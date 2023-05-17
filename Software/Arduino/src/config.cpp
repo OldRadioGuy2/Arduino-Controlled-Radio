@@ -152,11 +152,20 @@ void write_config(UCHAR offset, UCHAR size)
 #if USE_EEPROM
     char * cfg, ch;
     UINT i;
-    cfg = (char *) & globalConfig + offset;
-    for (i=offset; i < (offset + size); i++ ) {
-        ch = * cfg;
-        EEPROM.write(STARTING_LOCATION + i, ch);
-        cfg ++;
+    if ((offset + size) <= sizeof(CONFIG)) {
+        cfg = ((char *) & globalConfig.version[offset];
+        for (i=offset; i < (offset + size); i++ ) {
+            ch = * cfg;
+            EEPROM.write(STARTING_LOCATION + i, ch);
+            cfg ++;
+        }
+    } 
+    else {
+        Serial.print( F("Write Config ") );
+        Serial.print( offset );
+        Serial.print( F(" plus ") );
+        Serial.print( size );
+        Serial.println( F(" not valid") );
     }
 #endif
 }

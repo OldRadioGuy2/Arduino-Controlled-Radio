@@ -241,17 +241,18 @@ const char * get_freq(char * cmd)
 const char * get_sig_lvl(char * cmd)
 {
      uint8_t sigStr = rx.getReceivedSignalStrengthIndicator();
+     uint8_t sigSNR = rx.getStatusSNR();
      Serial.print( F(" Sig strength ") );
      Serial.println( sigStr );
 
      Serial.print( F(" SNR ") );
-     Serial.println( rx.getStatusSNR() );
+     Serial.println( sigSNR );
 
      Serial.print( F("Signal: ") );
      Serial.print(rx.getCurrentRSSI());
      Serial.println(F("dBuV"));
 
-     sprintf_1(sigStr);
+     sprintf_2(sigStr, sigSNR);
      return val_Ret;
 }
 
@@ -348,7 +349,7 @@ const char * calibrate_tuner(char * cmd)
           globalConfig.tunerCal[tuneIndex] = tuner;
 
     if ((NUM_TUNE_CONFIG -1) == tuneIndex)
-          write_config( (char *) & globalConfig.tunerCal[0] - globalConfig.version,
+          write_config( ((char *) & globalConfig.tunerCal[0]) - globalConfig.version,
                               sizeof(globalConfig.tunerCal));
      sprintf_1( tuner);
      return val_Ret;
@@ -365,10 +366,14 @@ const char * calibrate_band(char * cmd)
     int cmdStart = 2;
     UCHAR bIndex = my_atoi(cmd, & cmdStart);
     if (0 == bIndex) {
+          Serial.print( F(" Band switch with ") );
+          Serial.print( last_band_index );
+          Serial.println( F(" bands enabled") );
           globalConfig.numBandCfg = last_band_index;
-          write_config( (char *) & globalConfig.numBandCfg - globalConfig.version,
+
+          write_config( ((char *) & globalConfig.numBandCfg) - globalConfig.version,
                               sizeof(globalConfig.numBandCfg));
-          write_config( (char *) globalConfig.bndSwCal[0] - globalConfig.version,
+          write_config( ((char *) & globalConfig.bndSwCal[0]) - globalConfig.version,
                               sizeof(globalConfig.bndSwCal));
           last_band_index = 0;        // CBn, 1- based
           last_band_value = 0;
@@ -410,7 +415,7 @@ const char * volume_feature(char * cmd)
           Serial.print(F(" Enable volume "));
           Serial.println(featEn);
           globalConfig.featureEn[FEATURE_VOLUME] = featEn;
-          write_config( (char *) & globalConfig.featureEn[FEATURE_VOLUME] - globalConfig.version,
+          write_config( ((char *) & globalConfig.featureEn[FEATURE_VOLUME]) - globalConfig.version,
                               sizeof(globalConfig.featureEn[FEATURE_VOLUME]));
          return goodRet;
      }
@@ -425,7 +430,7 @@ const char * tuning_feature(char * cmd)
           Serial.print(F(" Enable tuning "));
           Serial.println(featEn);
           globalConfig.featureEn[FEATURE_FREQ_CAP] = featEn;
-          write_config( (char *) & globalConfig.featureEn[FEATURE_FREQ_CAP] - globalConfig.version,
+          write_config( ((char *) & globalConfig.featureEn[FEATURE_FREQ_CAP]) - globalConfig.version,
                               sizeof(globalConfig.featureEn[FEATURE_FREQ_CAP]));
          return goodRet;
      }
@@ -440,7 +445,7 @@ const char * band_sw_feature(char * cmd)
           Serial.print(F(" Enable Band sw "));
           Serial.println(featEn);
           globalConfig.featureEn[FEATURE_BAND_SW] = featEn;
-          write_config( (char *) & globalConfig.featureEn[FEATURE_BAND_SW] - globalConfig.version,
+          write_config( ((char *) & globalConfig.featureEn[FEATURE_BAND_SW]) - globalConfig.version,
                               sizeof(globalConfig.featureEn[FEATURE_BAND_SW]));
          return goodRet;
      }
@@ -455,7 +460,7 @@ const char * display_feature(char * cmd)
           Serial.print(F(" En/rotate display "));
           Serial.println(featEn);
           globalConfig.featureEn[FEATURE_DISPLAY] = featEn;
-          write_config( (char *) & globalConfig.featureEn[FEATURE_DISPLAY] - globalConfig.version,
+          write_config( ((char *) & globalConfig.featureEn[FEATURE_DISPLAY]) - globalConfig.version,
                               sizeof(globalConfig.featureEn[FEATURE_DISPLAY]));
          return goodRet;
      }

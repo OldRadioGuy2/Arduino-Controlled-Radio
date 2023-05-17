@@ -128,10 +128,10 @@ const command command_list []= {
     {"SF", & set_freq },    // Set Frequency: SF,float_frequency (KHz)
     {"SB", & set_band },    // Set Band: SB,float_lower_limit, float_upper_limit 
     {"SV", & set_volume },  // write the configuration
-    {"EV", & volume_feature },    // turn on a feature
-    {"ET", & tuning_feature },   // turn off a feature
-    {"EB", & band_sw_feature },    // turn on a feature
-    {"ED", & display_feature },   // turn off a feature
+    {"EV", & volume_feature },    // turn on/off analog volume feature
+    {"ET", & tuning_feature },   // turn on/off tuning cap feature
+    {"EB", & band_sw_feature },    // turn on/off analog band sw feature
+    {"ED", & display_feature },   // turn on/off writing display feature
     {"GS", & get_sig_lvl },    // Get Current Frequency: GF. Returns float frequency in KHz
     {"GB", & get_band },    // Get Current Frequency: GF. Returns float frequency in KHz
     {"GV", & get_volume },    // Get Current Frequency: GF. Returns float frequency in KHz
@@ -469,17 +469,16 @@ void loop(void)
             A2D_VAL pinA1;  // get_band_switch()
             char newBand = 0;
             pinA1 = analogRead(analogBandSwitch);
-            while (pinA1 > globalConfig.bndSwCal[(int)newBand]) {
-                newBand ++;
-                if (globalConfig.numBandCfg <= newBand)
+            do {
+                if (pinA1 < globalConfig.bndSwCal[(int)newBand]) 
                     break;
-            }
+                newBand ++;
+             } while (globalConfig.numBandCfg > newBand);
+
             if (globalConfig.actBand != newBand)
             {
                 Serial.print(F("Band Sw now "));
                 Serial.println((int)newBand);
-                if (0 < newBand)
-                    newBand --;
                 globalConfig.actBand = newBand;
             }
         }
