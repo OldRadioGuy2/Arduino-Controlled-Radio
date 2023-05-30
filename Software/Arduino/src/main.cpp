@@ -466,21 +466,24 @@ void loop(void)
         /* Feature 3:
          * change AM/FM Band based on a digital or analog input */
         if (globalConfig.featureEn[FEATURE_BAND_SW]) {
-            A2D_VAL pinA1;  // get_band_switch()
             char newBand = 0;
-            pinA1 = analogRead(analogBandSwitch);
+            A2D_VAL = analogRead(analogBandSwitch);
             do {
-                if (pinA1 < globalConfig.bndSwCal[(int)newBand]) 
+                if (pinA1 < globalConfig.bndSwCal[(int)newBand])
                     break;
                 newBand ++;
              } while (globalConfig.numBandCfg > newBand);
+             /* ignore a value of zero here */
+             if (0 < newBand) {
+                newBand --;
+                if (globalConfig.actBand != newBand)
+                {
+                    Serial.print(F("Band Sw now "));
+                    Serial.println((int)newBand);
+                    globalConfig.actBand = newBand;
+                }
+             }
 
-            if (globalConfig.actBand != newBand)
-            {
-                Serial.print(F("Band Sw now "));
-                Serial.println((int)newBand);
-                globalConfig.actBand = newBand;
-            }
         }
         /* Feature 1:
          * change frequency based on a digital or analog input */

@@ -359,7 +359,7 @@ const char * calibrate_tuner(char * cmd)
 
 /* save off the intermediate values */
 UCHAR last_band_index = 0;        // CBn, 1- based
-A2D_VAL last_band_value = 0;
+A2D_VAL last_band_value = MIN_ANALOG_VALUE;
 
 const char * calibrate_band(char * cmd)
 {
@@ -376,7 +376,7 @@ const char * calibrate_band(char * cmd)
           write_config( ((char *) & globalConfig.bndSwCal[0]) - globalConfig.version,
                               sizeof(globalConfig.bndSwCal));
           last_band_index = 0;        // CBn, 1- based
-          last_band_value = 0;
+          last_band_value = MIN_ANALOG_VALUE;
 #if 1
      sprintf_1( globalConfig.numBandCfg);
      return val_Ret;
