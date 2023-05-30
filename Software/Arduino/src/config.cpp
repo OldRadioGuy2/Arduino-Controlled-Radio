@@ -153,7 +153,7 @@ void write_config(UCHAR offset, UCHAR size)
     char * cfg, ch;
     UINT i;
     if ((offset + size) <= sizeof(CONFIG)) {
-        cfg = ((char *) & globalConfig.version[offset];
+        cfg = (char *) & globalConfig.version[offset];
         for (i=offset; i < (offset + size); i++ ) {
             ch = * cfg;
             EEPROM.write(STARTING_LOCATION + i, ch);

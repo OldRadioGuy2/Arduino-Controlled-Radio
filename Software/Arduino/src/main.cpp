@@ -467,7 +467,7 @@ void loop(void)
          * change AM/FM Band based on a digital or analog input */
         if (globalConfig.featureEn[FEATURE_BAND_SW]) {
             char newBand = 0;
-            A2D_VAL = analogRead(analogBandSwitch);
+            A2D_VAL pinA1 = analogRead(analogBandSwitch);
             do {
                 if (pinA1 < globalConfig.bndSwCal[(int)newBand])
                     break;
