@@ -229,11 +229,11 @@ void loop(void)
     Serial.println( (globalConfig.featureEn[FEATURE_FREQ_CAP]) ? szOn : szOff);
     chRd = globalConfig.featureEn[FEATURE_VOLUME];
     Serial.print(F("Read Analog Volume: "));
-        if (3 == chRd)
+        if ((3 == chRd) || (6 == chRd))
         Serial.println(F("rev-log."));
-    else if (2 == chRd)
+    else if ((2 == chRd) || (5 == chRd))
         Serial.println(F("log-scale."));
-    else if (1 == chRd)
+    else if ((1 == chRd) || (4 == chRd))
         Serial.println(F("linear."));
     else
         Serial.println(szOff);
@@ -483,7 +483,6 @@ void loop(void)
                     globalConfig.actBand = newBand;
                 }
              }
-
         }
         /* Feature 1:
          * change frequency based on a digital or analog input */

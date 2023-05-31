@@ -365,11 +365,21 @@ const char * calibrate_band(char * cmd)
 {
     int cmdStart = 2;
     UCHAR bIndex = my_atoi(cmd, & cmdStart);
+    A2D_VAL bandPin = analogRead(analogBandSwitch);
+
+    Serial.print( F(" Cal Band ") );
+    Serial.print( bIndex );
+    Serial.print( F(" read ") );
+    Serial.println( bandPin );
+
     if (0 == bIndex) {
-          Serial.print( F(" Band switch with ") );
-          Serial.print( last_band_index );
-          Serial.println( F(" bands enabled") );
-          globalConfig.numBandCfg = last_band_index;
+         Serial.print( F(" Band switch with ") );
+         Serial.print( last_band_index );
+         Serial.println( F(" bands enabled") );
+         globalConfig.numBandCfg = last_band_index;
+
+         if (NUM_BANDS > last_band_index) 
+               globalConfig.bndSwCal[last_band_index] = (bandPin + MAX_ANALOG_VALUE) / 2;
 
           write_config( ((char *) & globalConfig.numBandCfg) - globalConfig.version,
                               sizeof(globalConfig.numBandCfg));
@@ -385,24 +395,17 @@ const char * calibrate_band(char * cmd)
 #endif
     }
     if (NUM_BANDS >= bIndex) {
-          A2D_VAL bandPin = analogRead(analogBandSwitch);
-
-          Serial.print( F(" Cal Band ") );
-          Serial.print( bIndex );
-          Serial.print( F(" read ") );
-          Serial.println( bandPin );
-
           if ((last_band_index + 1) == bIndex) {
                // for (1 == bIndex) case, we have insured 
                // both last_band_index = 0 and last_band_value = 0
-               globalConfig.bndSwCal[last_band_index] = (bandPin + last_band_value) / 2;
+               globalConfig.bndSwCal[last_band_index] = (last_band_value + bandPin) / 2;
           } else {
               Serial.println( F("out of order.") );
           }
           last_band_index = bIndex;
           last_band_value = bandPin;
-     sprintf_1( bandPin);
-     return val_Ret;
+          sprintf_1( bandPin);
+          return val_Ret;
     }
     return bad_Ret;
 }
