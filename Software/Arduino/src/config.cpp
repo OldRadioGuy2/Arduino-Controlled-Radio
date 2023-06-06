@@ -41,22 +41,33 @@ FREQ_VAL roundToBandwidth(FREQ_VAL freqIn)
     result = freqIn;
     minFre = bandCfg->minFreq;
     if (MODE_FM == bandCfg->mode) {
-        spacing = 200;      // commerical FM is 200 KHz spacing
+        spacing = 20;      // commerical FM is 200 KHz spacing
         if ((0 < bandCfg->bw) && (NUM_BW_DEF_FM > bandCfg->bw))
             spacing = bandwidthFM[bandCfg->bw];
-        result *= 10;
-        minFre *= 10;
     } else {
         spacing = 1;        // assume 1 KHz spacing
         if ((0 < bandCfg->bw) && (NUM_BW_DEF_AM > bandCfg->bw))
             spacing = bandwidthAM[bandCfg->bw];
     }
     diff = result - minFre;
-    diff = (diff + (spacing / 2)) / spacing;
+    if (MODE_FM == bandCfg->mode)
+       diff = diff / spacing;
+    else
+        diff = (diff + (spacing / 2) -1) / spacing;
     result = minFre + (diff * spacing);
-    if (MODE_FM == bandCfg->mode) {
+#if 0
+    Serial.print( F("Input ") );
+    Serial.print( freqIn );
+    Serial.print( F(" round ") );
+    Serial.println( result );
+#endif
+    if (result > bandCfg->maxFreq) {
+        result = bandCfg->maxFreq;
+        if (MODE_FM == bandCfg->mode)
+            result -= spacing / 2;
+    }
+    else if (MODE_FM == bandCfg->mode) {
         result += spacing / 2;
-        result = result / 10;
     }
     return result;
 }

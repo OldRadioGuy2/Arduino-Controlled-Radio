@@ -38,15 +38,15 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_R
 # define RESET_PIN 2
 
 const char * const strBandwidthAM[NUM_BW_DEF_AM] = {
-    "6",  "4", "3", "2", "1", "1.8", "2.5"
+    "6", "4", "3", "2", "1", "1.8", "2.5"
 };
-
+/* units are KHz for AM bands */
 const FREQ_VAL bandwidthAM[NUM_BW_DEF_AM] = {
     6,  4,  3,  2,  1,  1, 1
 };
-
+/* and 10's of KHz for FM */
 const FREQ_VAL bandwidthFM[NUM_BW_DEF_FM] = {
-    0, 110, 84, 60, 40
+    0, 11, 8, 6, 4
 };
 
 /* single global instance of the Radio control library class */
@@ -485,25 +485,58 @@ void loop(void)
              }
         }
         /* Feature 1:
-         * change frequency based on a digital or analog input */
+         * change frequency by doing a capacitence/timing measurement */
         if ((globalConfig.featureEn[FEATURE_FREQ_CAP]) &&
             (NUM_BANDS > curBand)) {      // Get cap, calc Frequency
             BAND_CFG * bandCfg = & globalConfig.bands[(int)curBand];
-            CAP_RD_VAL diff, tuner = measure_Cap_timing( false );
+            FREQ_VAL newFreq;
+            unsigned long bandFreq, offFreq;
+            CAP_RD_VAL shortCnt, diff, tuner = measure_Cap_timing( false );
 
-            currentFrequency = bandCfg->maxFreq - bandCfg->minFreq;
+            bandFreq = bandCfg->maxFreq - bandCfg->minFreq;
             if ( globalConfig.tunerCal[1] > globalConfig.tunerCal[0]) {
+                shortCnt = globalConfig.tunerCal[0];
                 diff = globalConfig.tunerCal[1] - globalConfig.tunerCal[0];
-                if (tuner > globalConfig.tunerCal[0])
-                    tuner -= globalConfig.tunerCal[0];
-                currentFrequency = bandCfg->minFreq + ((currentFrequency * tuner) / diff);
             } else {
+                shortCnt = globalConfig.tunerCal[1];
                 diff = globalConfig.tunerCal[0] - globalConfig.tunerCal[1];
-                if (tuner > globalConfig.tunerCal[1])
-                    tuner -= globalConfig.tunerCal[1];
-                currentFrequency = bandCfg->maxFreq - ((currentFrequency * tuner) / diff);
             }
-            globalConfig.actFreq[(int)curBand] = roundToBandwidth(currentFrequency);
+            if (tuner > shortCnt)
+                tuner -= shortCnt;
+            else tuner = 0;
+            offFreq = (bandFreq * tuner) / diff;
+            if ( globalConfig.tunerCal[1] > globalConfig.tunerCal[0]) {
+                newFreq = bandCfg->minFreq + (FREQ_VAL)offFreq;
+            } else {
+                newFreq = bandCfg->maxFreq - (FREQ_VAL)offFreq;
+            }
+#if 1
+            {
+                static UINT saveFrequency = 0;
+                newFreq = roundToBandwidth(newFreq);
+                if (saveFrequency != newFreq) {
+                    Serial.print(F("Cal dif "));
+                    Serial.print( diff );
+                    Serial.print(F(" tuner "));
+                    Serial.print(tuner);
+
+                    Serial.print(F(" New freq "));
+                    Serial.print( newFreq );
+                    Serial.print(F(" offset "));
+                    Serial.println(offFreq);
+
+                    saveFrequency = newFreq;
+                }
+            }
+#endif
+#if 0
+            currentFrequency = roundToBandwidth(newFrequency);
+            if ( globalConfig.actFreq[(int)curBand] != currentFrequency) {
+                Serial.print(F("Band Sw now "));
+                Serial.println(currentFrequency);
+                globalConfig.actFreq[(int)curBand] = roundToBandwidth();
+            }
+#endif
         }
         /* Feature 2:
          * change volume based on an analog input */

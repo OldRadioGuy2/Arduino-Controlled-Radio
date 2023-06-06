@@ -131,7 +131,7 @@ CAP_RD_VAL measure_Cap_timing(int verbose)
    if (verbose) {
       Serial.print( res);       // print the value to serial port
       Serial.print(F(" counts, "));      // print units and carriage return
-      Serial.print( (end - start) >> 2);       // print the value to serial port
+      Serial.print( (end - start) );       // print the value to serial port
       Serial.println(F(" u-sec."));      // print units and carriage return
    }
     return (CAP_RD_VAL)res;
@@ -154,6 +154,7 @@ const char * set_freq(char * cmd)
                     Serial.print(F(" Set Frequency "));
                     Serial.println(freqOut);
                }
+     // globalConfig.actFreq[ band ] = freqIn;
         globalConfig.actFreq[ band ] = freqOut;
         write_config( ((char *) & globalConfig.actFreq[ band ]) - globalConfig.version,
                                   sizeof(globalConfig.actFreq[0]));
@@ -344,11 +345,11 @@ const char * calibrate_tuner(char * cmd)
 {
     int cmdStart = 2;
     UCHAR tuneIndex = my_atoi(cmd, & cmdStart);
-    if (NUM_TUNE_CONFIG > tuneIndex) {
+    if ((0 < tuneIndex) && (NUM_TUNE_CONFIG >= tuneIndex)) {
           CAP_RD_VAL tuner = measure_Cap_timing( true );
-          globalConfig.tunerCal[tuneIndex] = tuner;
+          globalConfig.tunerCal[tuneIndex -1] = tuner;
 
-    if ((NUM_TUNE_CONFIG -1) == tuneIndex)
+    if (NUM_TUNE_CONFIG == tuneIndex)
           write_config( ((char *) & globalConfig.tunerCal[0]) - globalConfig.version,
                               sizeof(globalConfig.tunerCal));
      sprintf_1( tuner);

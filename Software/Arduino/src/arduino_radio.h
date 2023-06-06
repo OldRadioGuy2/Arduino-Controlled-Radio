@@ -15,7 +15,7 @@ typedef unsigned int FREQ_VAL;
 /* our interface type definitions,
  * 10 bit A to D, tuning cap is a long */
 typedef unsigned int A2D_VAL;
-typedef unsigned int CAP_RD_VAL;
+typedef unsigned long CAP_RD_VAL;
 #define MIN_ANALOG_VALUE    (0)
 #define MAX_ANALOG_VALUE    ((1 << 10) -1)
 
